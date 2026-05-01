@@ -338,7 +338,17 @@ const TRAVAIL_TODOS=[
   {key:'preparation',label:'Préparation'},{key:'admin',label:'Admin'}
 ];
 const ENTRAIN_OPTS=['dissertation','commentaire','oral','chronologie','plan détaillé','autre'];
-const CAPES_LABELS=['Histoire Romaine','Histoire Papale','Histoire Coloniale','Géographie Pacifique','Géographie Littorale','Géographie Environnement'];
+const CAPES_LABELS=[
+  'Histoire Romaine',
+  'Histoire Christianisme',
+  'Histoire Coloniale',
+  'Géographie Pacifique',
+  'Géographie Environnement',
+  'Géographie Littoral',
+  'Méthode Dissertation',
+  'Méthode Oral',
+  'Méthode Commentaire'
+];
 const CAPES_BADGE_CLASSES={
   'Histoire Romaine':'badge-hist-rom','Histoire Papale':'badge-hist-pap',
   'Histoire Coloniale':'badge-hist-col','Géographie Pacifique':'badge-geo-pac',
@@ -720,13 +730,68 @@ function secCapes(d,k){
   return `<div class="section">
   <div class="sec-head" onclick="toggleSec(this)"><span class="sec-title">CAPES</span><span class="sec-arrow">▼</span></div>
   <div class="sec-body">
-    <div class="fl"><div class="lbl">Fiches faites</div><input type="number" min="0" id="fi-${k}" value="${d.fiches||''}" oninput="initDay('${k}').fiches=+this.value||0"></div>
+    ${buildCapesFichesSection(d,k)}
     <div class="fl"><div class="lbl">Entraînements</div><div class="chips">${eChips}</div></div>
     ${buildCapesBooksSection(d,k)}
     <div class="fl"><div class="lbl">Notes de méthode</div><textarea id="cn-${k}" placeholder="Ce que tu as travaillé...">${d.capesNote||''}</textarea></div>
   </div></div>`;
 }
-function buildCapesBooksSection(d,k){
+function buildCapesFichesSection(d,k){
+  const fiches=d.capesFichesList||[];
+  const rows=fiches.map((f,i)=>`
+    <div class="add-item">
+      <div class="add-item-header">
+        <span style="font-size:12px;font-weight:500">${f.title||'Fiche CAPES'}</span>
+        <button class="rm-btn" onclick="removeCapesFiche('${k}',${i})">×</button>
+      </div>
+      <div class="fl">
+        <div class="lbl">Titre de la fiche</div>
+        <input type="text" value="${f.title||''}" data-fi="${i}" data-ff="title" oninput="updCapesFiche('${k}',this)">
+      </div>
+      <div class="fl">
+        <div class="lbl">Label</div>
+        <select data-fi="${i}" data-ff="label" onchange="updCapesFiche('${k}',this)">
+          <option value="">—</option>
+          ${CAPES_LABELS.map(l=>`<option value="${l}"${f.label===l?' selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="fl">
+        <div class="lbl">Note</div>
+        <input type="text" value="${f.note||''}" placeholder="facultatif" data-fi="${i}" data-ff="note" oninput="updCapesFiche('${k}',this)">
+      </div>
+    </div>
+  `).join('');
+
+  return `<div class="fl">
+    <div class="lbl">Fiches CAPES</div>
+    ${rows}
+    <button class="add-btn" onclick="addCapesFiche('${k}')">+ Ajouter une fiche</button>
+  </div>`;
+}
+
+function addCapesFiche(k){
+  const day=initDay(k);
+  day.capesFichesList=day.capesFichesList||[];
+  day.capesFichesList.push({title:'',label:'',note:'',createdAt:k});
+  rebuildSheet(k);
+}
+
+function removeCapesFiche(k,i){
+  initDay(k).capesFichesList.splice(i,1);
+  rebuildSheet(k);
+}
+
+function updCapesFiche(k,input){
+  const day=initDay(k);
+  const i=+input.dataset.fi;
+  const f=input.dataset.ff;
+  day.capesFichesList=day.capesFichesList||[];
+  day.capesFichesList[i]=day.capesFichesList[i]||{};
+  day.capesFichesList[i][f]=input.tagName==='SELECT'
+    ? input.options[input.selectedIndex].value
+    : input.value;
+}
+  function buildCapesBooksSection(d,k){
   const books=d.capesBooksList||[];
   const rows=books.map((b,i)=>`
     <div class="add-item">
@@ -1007,7 +1072,15 @@ function renderStats(period='week'){
   /* social */
   const totalSoc=allDays.reduce((a,d)=>a+(d.socialMeetings?d.socialMeetings.length:0),0);
   /* capes */
-  const totalFiches=allDays.reduce((a,d)=>a+(d.fiches||0),0);
+  const allFiches=[];
+entries.forEach(([k,d])=>{
+  if(d.capesFichesList){
+    d.capesFichesList.forEach(f=>{
+      if(f.title)allFiches.push({...f,date:k});
+    });
+  }
+});
+const totalFiches=allFiches.length;
   const capesD=allDays.filter(d=>d.fiches||d.capesNote||(d.entrains&&d.entrains.length));
   /* projets */
   const projects=getProjects();
@@ -1106,6 +1179,14 @@ function renderStats(period='week'){
     <div class="sc"><div class="sc-label">Mots écrits</div><div class="sc-val">${totalRomanMots.toLocaleString('fr-FR')}</div><div class="sc-sub">≈ ${Math.round(totalRomanMots/80000*100)/100} roman${totalRomanMots>80000?'s':''} de Zola</div></div>
   </div>`:''}
 
+    <div class="stitle">Bibliothèque des fiches CAPES (${allFiches.length})</div>
+  ${allFiches.length?allFiches.map(f=>`
+    <div class="book-item">
+      <div class="book-title">${f.title}</div>
+      <div class="book-meta">${f.date} · ${f.label||'sans label'}</div>
+      ${f.note?`<div style="font-size:11px;color:var(--text2);margin-top:3px">${f.note}</div>`:''}
+    </div>
+  `).join(''):'<div style="font-size:13px;color:var(--text3)">Aucune fiche CAPES renseignée.</div>'}
   <div class="stitle">Bibliothèque — loisir (${loisirBooks.length})</div>${loisirList}
   <div class="stitle">Bibliothèque — CAPES (${allCapesBooks.length})</div>${capesList}
   <div class="stitle">Corrélations observées</div>${corrRows}
