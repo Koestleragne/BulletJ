@@ -361,7 +361,7 @@ let sportChartWeekly=null,sportChartCumul=null,sportChartCompare=null,timeChart=
 /* ── Dropbox ── */
 const DROPBOX_APP_KEY='mimjsae5tdcsijp';
 const DROPBOX_FILE_PATH='/carnet.json';
-const DROPBOX_SCOPES='files.content.read files.content.write';
+const DROPBOX_SCOPES='files.content.read files.content.write files.metadata.read';
 let dropboxAccessToken=localStorage.getItem('bj_dropbox_access_token')||null;
 let dropboxTokenExpiresAt=+(localStorage.getItem('bj_dropbox_expires_at')||0);
 let dropboxSaveTimer=null;
