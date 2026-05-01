@@ -254,6 +254,7 @@ textarea{resize:vertical;min-height:56px}
   <button class="tab" onclick="showTab('stats',this)">Statistiques</button>
   <button class="tab" onclick="showTab('sport',this)">Bilan sport</button>
   <button class="tab" onclick="showTab('projets',this)">Projets</button>
+  <button class="tab" onclick="showTab('deadlines',this)">Échéances</button>
 </div>
 
 <!-- ═══════════════ CALENDRIER ═══════════════ -->
@@ -299,7 +300,10 @@ textarea{resize:vertical;min-height:56px}
 <div id="tab-projets" class="panel">
   <div id="projets-content"></div>
 </div>
-
+<div id="tab-deadlines" class="panel">
+  <div id="deadlines-content"></div>
+</div>
+  
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -345,10 +349,7 @@ const USER_HEIGHT_M=1.87;
 const MEAL_KCAL_DEFAULTS={vert:1900,jaune:2300,orange:2800,rouge:3400,noir:0,gris:0};
 const COCA_KCAL_PER_CAN=140;
 
-/* ── Échéances importantes ── */
-const DEADLINES=[
-  {label:'CAPES',date:'2026-06-15'},
-];
+
 
 /* ════════════════════════════════════════════════
    ÉTAT GLOBAL
@@ -358,7 +359,7 @@ let curYear=now.getFullYear(),curMonth=now.getMonth(),selKey=null,curStat='week'
 let sportChartWeekly=null,sportChartCumul=null,sportChartCompare=null,timeChart=null;
 
 /* ── Dropbox ── */
-const DROPBOX_APP_KEY='REMPLACE_MOI_PAR_TON_APP_KEY_DROPBOX';
+const DROPBOX_APP_KEY='mimjsae5tdcsijpX';
 const DROPBOX_FILE_PATH='/carnet.json';
 const DROPBOX_SCOPES='files.content.read files.content.write';
 let dropboxAccessToken=localStorage.getItem('bj_dropbox_access_token')||null;
@@ -368,6 +369,15 @@ let dropboxSaveTimer=null;
 function loadData(){try{return JSON.parse(localStorage.getItem('bj_v7')||'{}')}catch(e){return {}}}
 function saveData(){localStorage.setItem('bj_v7',JSON.stringify(DATA));scheduleDropboxSave();}
 let DATA=loadData();
+  /* ── Échéances modifiables ── */
+function getDeadlines(){
+  DATA.__deadlines = DATA.__deadlines || [];
+  return DATA.__deadlines;
+}
+function setDeadlines(arr){
+  DATA.__deadlines = arr;
+  saveData();
+}
 
 /* projets stockés séparément dans DATA.__projects */
 function getProjects(){return DATA.__projects||[];}
@@ -480,18 +490,35 @@ function renderDeadlinesBanner(){
   const banner=document.getElementById('deadlines-banner');
   let html='';
   const today=new Date();today.setHours(0,0,0,0);
-  DEADLINES.forEach(dl=>{
-    const dlDate=new Date(dl.date);dlDate.setHours(0,0,0,0);
-    const diff=Math.round((dlDate-today)/86400000);
-    if(diff>=0&&diff<=90){
-      html+=`<div class="deadline-item"><span class="deadline-badge">${diff===0?'Aujourd\'hui':diff===1?'Demain':'J-'+diff}</span>${dl.label} — ${dlDate.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</div>`;
-    }
-  });
-  if(html){banner.style.display='block';banner.innerHTML=html;}else{banner.style.display='none';}
+
+  getDeadlines()
+    .filter(dl=>dl.date && !dl.done)
+    .sort((a,b)=>a.date.localeCompare(b.date))
+    .forEach(dl=>{
+      const dlDate=new Date(dl.date);dlDate.setHours(0,0,0,0);
+      const diff=Math.round((dlDate-today)/86400000);
+      if(diff>=0&&diff<=90){
+        const level=dl.level||'normal';
+        html+=`<div class="deadline-item">
+          <span class="deadline-badge">${diff===0?'Aujourd’hui':diff===1?'Demain':'J-'+diff}</span>
+          ${dl.label||'Échéance'}${dl.category?` · ${dl.category}`:''}
+          — ${dlDate.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
+          ${level==='critique'?' ⚠️':level==='important'?' !':''}
+        </div>`;
+      }
+    });
+
+  if(html){banner.style.display='block';banner.innerHTML=html;}
+  else{banner.style.display='none';}
 }
+
+function deadlinesForKey(k){
+  return getDeadlines().filter(dl=>dl.date===k && !dl.done);
+}
+
 function deadlineForDay(d){
-  const today=new Date();today.setHours(0,0,0,0);
-  return DEADLINES.some(dl=>{const dlDate=new Date(dl.date);dlDate.setHours(0,0,0,0);return dlDate.getTime()===d.getTime();});
+  const k=dk(d.getFullYear(),d.getMonth(),d.getDate());
+  return deadlinesForKey(k).length>0;
 }
 
 /* ════════════════════════════════════════════════
@@ -504,6 +531,7 @@ function showTab(t,btn){
   if(t==='stats')renderStats(curStat);
   if(t==='sport')renderBilanSport();
   if(t==='projets')renderProjets();
+  if(t==='deadlines')renderDeadlinesManager();
 }
 
 /* ════════════════════════════════════════════════
@@ -520,6 +548,8 @@ function renderCal(){
     const k=dk(curYear,curMonth,d),day=DATA[k]||{};
     const isToday=now.getFullYear()===curYear&&now.getMonth()===curMonth&&now.getDate()===d;
     const dlDate=new Date(curYear,curMonth,d);const hasDl=deadlineForDay(dlDate);
+    const dayDeadlines=deadlinesForKey(k);
+    
     const el=document.createElement('div');
     el.className='cal-day'+(isToday?' today':'')+(selKey===k?' selected':'')+(hasDl?' has-deadline':'');
     const q=day.quality||0;
@@ -529,6 +559,9 @@ function renderCal(){
     const ec=day.ecriture;if(ec&&((ec.roman&&(ec.roman.mots||ec.roman.pages))||(ec.poesie&&ec.poesie.mots)))dots+=`<div class="dot" style="background:#7f77dd"></div>`;
     if(day.fiches||day.capesNote)dots+=`<div class="dot" style="background:#d4537e"></div>`;
     if(hasDl)dots+=`<div class="deadline-dot"></div>`;
+    if(dayDeadlines.length){
+    el.title=dayDeadlines.map(dl=>`${dl.label} — ${dl.category||'échéance'}`).join('\n');
+}
     el.innerHTML=`<div class="day-num">${d}</div><div class="day-dots">${dots}</div><div class="day-stars">${renderQualityStarsSmall(q)}</div>`;
     el.onclick=()=>openDay(k,d);g.appendChild(el);
   }
@@ -1197,10 +1230,119 @@ function exportCSV(){
 /* ════════════════════════════════════════════════
    INIT
    ════════════════════════════════════════════════ */
+function renderDeadlinesManager(){
+  const list=getDeadlines().sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
+  const active=list.filter(d=>!d.done);
+  const done=list.filter(d=>d.done);
+
+  document.getElementById('deadlines-content').innerHTML=`
+    <div class="stitle">Ajouter une échéance</div>
+    <div class="add-item">
+      <div class="fl"><div class="lbl">Titre</div><input type="text" id="dl-new-label" placeholder="ex: Rendu dossier, oral blanc, contrôle..."></div>
+      <div class="two">
+        <div class="fl"><div class="lbl">Date</div><input type="date" id="dl-new-date"></div>
+        <div class="fl"><div class="lbl">Catégorie</div>
+          <select id="dl-new-category">
+            <option value="CAPES">CAPES</option>
+            <option value="Travail">Travail</option>
+            <option value="Projet">Projet</option>
+            <option value="Perso">Perso</option>
+            <option value="Santé">Santé</option>
+          </select>
+        </div>
+      </div>
+      <div class="fl"><div class="lbl">Importance</div>
+        <select id="dl-new-level">
+          <option value="normal">Normale</option>
+          <option value="important">Importante</option>
+          <option value="critique">Critique</option>
+        </select>
+      </div>
+      <div class="fl"><div class="lbl">Note</div><textarea id="dl-new-note" placeholder="Détails, choses à préparer..."></textarea></div>
+      <button class="add-btn" onclick="addDeadline()">+ Ajouter l’échéance</button>
+    </div>
+
+    <div class="stitle">Échéances à venir <span class="stitle-badge">${active.length}</span></div>
+    ${active.length?active.map(renderDeadlineCard).join(''):'<div style="font-size:13px;color:var(--text3)">Aucune échéance active.</div>'}
+
+    <div class="stitle">Échéances terminées <span class="stitle-badge">${done.length}</span></div>
+    ${done.length?done.map(renderDeadlineCard).join(''):'<div style="font-size:13px;color:var(--text3)">Rien de vaincu pour l’instant.</div>'}
+  `;
+}
+
+function renderDeadlineCard(dl){
+  const today=new Date();today.setHours(0,0,0,0);
+  const dlDate=dl.date?new Date(dl.date):null;
+  let diffTxt='sans date';
+  if(dlDate){
+    dlDate.setHours(0,0,0,0);
+    const diff=Math.round((dlDate-today)/86400000);
+    diffTxt=diff<0?`passée depuis ${Math.abs(diff)} j`:diff===0?'aujourd’hui':diff===1?'demain':`J-${diff}`;
+  }
+  const level=dl.level||'normal';
+  const border=level==='critique'?'#e24b4a':level==='important'?'#ba7517':'var(--border)';
+  return `<div class="project-card" style="border-color:${border}">
+    <div class="proj-title">${dl.done?'✓ ':''}${dl.label||'Échéance'}</div>
+    <div class="proj-meta">${dl.date||'—'} · ${diffTxt} · ${dl.category||'sans catégorie'} · ${level}</div>
+    ${dl.note?`<div style="font-size:12px;color:var(--text2);margin-bottom:8px">${dl.note}</div>`:''}
+    <div class="two">
+      <button class="add-btn" onclick="toggleDeadlineDone('${dl.id}')">${dl.done?'Réouvrir':'Marquer finie'}</button>
+      <button class="fin-btn" onclick="deleteDeadline('${dl.id}')">Supprimer</button>
+    </div>
+  </div>`;
+}
+
+function addDeadline(){
+  const label=document.getElementById('dl-new-label').value.trim();
+  const date=document.getElementById('dl-new-date').value;
+  const category=document.getElementById('dl-new-category').value;
+  const level=document.getElementById('dl-new-level').value;
+  const note=document.getElementById('dl-new-note').value.trim();
+
+  if(!label || !date){
+    alert('Il faut au moins un titre et une date.');
+    return;
+  }
+
+  const arr=getDeadlines();
+  arr.push({
+    id:'dl_'+Date.now(),
+    label,
+    date,
+    category,
+    level,
+    note,
+    done:false,
+    createdAt:new Date().toISOString()
+  });
+
+  setDeadlines(arr);
+  renderDeadlinesManager();
+  renderDeadlinesBanner();
+  renderCal();
+}
+
+function toggleDeadlineDone(id){
+  const arr=getDeadlines();
+  const dl=arr.find(d=>d.id===id);
+  if(dl)dl.done=!dl.done;
+  setDeadlines(arr);
+  renderDeadlinesManager();
+  renderDeadlinesBanner();
+  renderCal();
+}
+
+function deleteDeadline(id){
+  if(!confirm('Supprimer cette échéance ?'))return;
+  setDeadlines(getDeadlines().filter(d=>d.id!==id));
+  renderDeadlinesManager();
+  renderDeadlinesBanner();
+  renderCal();
+}
 document.getElementById('header-date').textContent=now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-renderDeadlinesBanner();
 renderCal();
 renderStats('week');
+renderDeadlinesBanner();
 finishDropboxAuthIfNeeded();
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));}
 </script>
