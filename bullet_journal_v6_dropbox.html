@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carnet de bord</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#fafaf8">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#fafaf8;--bg2:#f2f1ed;--bg3:#e8e7e2;
+  --text:#18181a;--text2:#6b6b67;--text3:#9b9b96;
+  --border:rgba(0,0,0,0.10);--border2:rgba(0,0,0,0.22);
+  --r:8px;--rl:12px;
+  --info-bg:#e6f1fb;--info-text:#185fa5;--info-border:#b5d4f4;
+  --warn-bg:#faeeda;--warn-text:#854f0b;--warn-border:#fac775;
+  --ok:#1d9e75;--danger:#e24b4a;
+  --sport-marche:#378ADD;--sport-escalade:#D85A30;--sport-natation:#1D9E75;
+  --sport-course:#E24B4A;--sport-renforcement:#7F77DD;--sport-velo:#BA7517;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#16161a;--bg2:#1e1e24;--bg3:#26262e;
+  --text:#f0eff0;--text2:#9b9b96;--text3:#6b6b67;
+  --border:rgba(255,255,255,0.10);--border2:rgba(255,255,255,0.22);
+  --info-bg:#0c3a6b;--info-text:#85b7eb;--info-border:#185fa5;
+  --warn-bg:#4a2d08;--warn-text:#fac775;--warn-border:#854f0b;
+}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.container{max-width:740px;margin:0 auto;background:var(--bg);min-height:100vh;padding-bottom:80px}
+
+/* ─── HEADER ─── */
+.app-header{padding:18px 20px 0;display:flex;align-items:baseline;justify-content:space-between;border-bottom:0.5px solid var(--border);padding-bottom:14px}
+.app-title{font-family:'DM Serif Display',serif;font-size:22px;letter-spacing:-0.3px}
+.header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.app-date{font-size:12px;color:var(--text2)}
+.drive-btn{border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.drive-btn:hover{background:var(--bg2)}
+.drive-btn.connected{background:var(--info-bg);border-color:var(--info-border);color:var(--info-text)}
+
+/* ─── TABS ─── */
+.tabs{display:flex;border-bottom:0.5px solid var(--border);padding:0 20px}
+.tab{padding:11px 16px;font-size:13px;cursor:pointer;border:none;background:none;color:var(--text2);border-bottom:2px solid transparent;font-family:'DM Sans',sans-serif}
+.tab.active{color:var(--text);border-bottom:2px solid var(--text);font-weight:500}
+.panel{display:none;padding:16px 20px}.panel.active{display:block}
+
+/* ─── CALENDAR ─── */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cal-nav-btn{background:none;border:0.5px solid var(--border2);border-radius:var(--r);padding:7px 14px;cursor:pointer;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif}
+.cal-nav-btn:hover{background:var(--bg2)}
+.month-label{font-family:'DM Serif Display',serif;font-size:18px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-header{text-align:center;font-size:11px;color:var(--text2);padding:5px 0;font-weight:500}
+.cal-day{border:0.5px solid var(--border);border-radius:var(--r);padding:6px;min-height:68px;cursor:pointer;background:var(--bg);transition:border-color .15s}
+.cal-day:hover{border-color:var(--border2)}
+.cal-day.empty{background:none;border-color:transparent;cursor:default}
+.cal-day.today{border-color:var(--info-border);background:var(--info-bg)}
+.cal-day.selected{border-color:var(--text);border-width:1.5px}
+.day-num{font-size:11px;font-weight:500;margin-bottom:3px}
+.day-dots{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:3px}
+.dot{width:5px;height:5px;border-radius:50%}
+.stars{font-size:9px;letter-spacing:-1px}
+.star-on{color:#ba7517}.star-off{color:var(--border2)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:11px;color:var(--text2)}
+.legend span{display:flex;align-items:center;gap:4px}
+
+/* ─── SHEET ─── */
+.back-btn{background:none;border:0.5px solid var(--border);border-radius:var(--r);padding:7px 14px;font-size:13px;cursor:pointer;color:var(--text2);margin-bottom:14px;font-family:'DM Sans',sans-serif}
+.back-btn:hover{background:var(--bg2)}
+.sheet-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+.sheet-date{font-family:'DM Serif Display',serif;font-size:20px}
+.sheet-stars{font-size:18px}
+
+/* ─── SECTIONS ─── */
+.section{border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:8px}
+.sec-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;background:var(--bg2);user-select:none}
+.sec-head:hover{background:var(--bg3)}
+.sec-title{font-size:13px;font-weight:500}
+.sec-arrow{font-size:11px;color:var(--text3);transition:transform .2s}
+.sec-body{padding:13px 14px;display:none;flex-direction:column;gap:10px;border-top:0.5px solid var(--border)}
+.sec-body.open{display:flex}
+
+/* ─── FORM ELEMENTS ─── */
+.fl{display:flex;flex-direction:column;gap:4px}
+.lbl{font-size:12px;color:var(--text2)}
+input[type=text],input[type=number],input[type=time],textarea,select{
+  width:100%;font-size:13px;padding:7px 10px;
+  border:0.5px solid var(--border);border-radius:var(--r);
+  background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--border2)}
+textarea{resize:vertical;min-height:60px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* ─── MOOD / CHIP BUTTONS ─── */
+.mood-btns{display:flex;gap:5px;flex-wrap:wrap}
+.mb{border:0.5px solid var(--border);border-radius:var(--r);padding:5px 10px;font-size:12px;cursor:pointer;background:none;color:var(--text);font-family:'DM Sans',sans-serif}
+.mb:hover{background:var(--bg2)}
+.sel-vl{background:#fcebeb!important;border-color:#e24b4a!important;color:#a32d2d!important}
+.sel-l{background:#fcebeb!important;border-color:#f09595!important;color:#791f1f!important}
+.sel-n{background:var(--bg2)!important;border-color:#888780!important}
+.sel-g{background:#eaf3de!important;border-color:#639922!important;color:#3b6d11!important}
+.sel-vg{background:#e1f5ee!important;border-color:#1d9e75!important;color:#0f6e56!important}
+.sel-h{background:#faeeda!important;border-color:#ba7517!important;color:#854f0b!important}
+.sel-ok{background:var(--bg2)!important;border-color:var(--border2)!important;font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{border:0.5px solid var(--border);border-radius:20px;padding:4px 11px;font-size:12px;cursor:pointer;background:none;color:var(--text);font-family:'DM Sans',sans-serif}
+.chip.sel{background:var(--info-bg);border-color:var(--info-text);color:var(--info-text)}
+.sport-det{background:var(--bg2);border-radius:var(--r);padding:10px;margin-top:5px;display:flex;flex-direction:column;gap:8px}
+.color-row{display:flex;gap:8px}
+.cdot{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2.5px solid transparent}
+.cdot.sel{border-color:var(--text)}
+
+/* ─── TO-DO FIXE ─── */
+.todo-fixed{border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden}
+.todo-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:0.5px solid var(--border)}
+.todo-row:last-child{border-bottom:none}
+.todo-row:hover{background:var(--bg2)}
+.todo-check{width:15px;height:15px;cursor:pointer;flex-shrink:0;accent-color:var(--text)}
+.todo-label{font-size:13px;flex:1}
+.todo-label.done{color:var(--text3);text-decoration:line-through}
+
+/* ─── SOCIAL / BOOK ITEMS ─── */
+.add-item{background:var(--bg2);border-radius:var(--r);padding:10px;margin-top:5px;display:flex;flex-direction:column;gap:7px}
+.add-item-header{display:flex;align-items:center;justify-content:space-between}
+.rm-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;padding:0 2px;line-height:1}
+.rm-btn:hover{color:var(--text2)}
+.add-btn{font-size:12px;color:var(--text2);background:none;border:0.5px dashed var(--border2);border-radius:var(--r);padding:6px 12px;cursor:pointer;margin-top:4px;width:100%;font-family:'DM Sans',sans-serif}
+.add-btn:hover{background:var(--bg2)}
+
+/* ─── SAVE ─── */
+.save-btn{background:var(--text);color:var(--bg);border:none;border-radius:var(--r);padding:10px 22px;font-size:13px;cursor:pointer;font-weight:500;margin-top:4px;font-family:'DM Sans',sans-serif}
+.save-btn:hover{opacity:.85}
+.save-msg{font-size:12px;color:var(--ok);margin-top:6px;display:none}
+
+/* ─── STATS ─── */
+.stat-tabs{display:flex;gap:6px;margin-bottom:14px}
+.st{border:0.5px solid var(--border);border-radius:var(--r);padding:6px 14px;font-size:13px;cursor:pointer;background:none;color:var(--text2);font-family:'DM Sans',sans-serif}
+.st.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:14px}
+.sc{background:var(--bg2);border-radius:var(--r);padding:12px 14px}
+.sc-label{font-size:11px;color:var(--text2);margin-bottom:4px}
+.sc-val{font-size:22px;font-weight:500;line-height:1.1}
+.sc-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.sc.hl{background:#eaf3de;border:0.5px solid #97c459}
+.sc.hl .sc-val,.sc.hl .sc-label{color:#27500a}.sc.hl .sc-sub{color:#639922}
+.stitle{font-size:13px;font-weight:500;margin:16px 0 8px}
+.warn-box{border:0.5px solid var(--warn-border);background:var(--warn-bg);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--warn-text);margin-bottom:7px}
+.corr-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--border);font-size:12px}
+.corr-row:last-child{border-bottom:none}
+.cbar-w{flex:1;height:6px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.cbar{height:100%;border-radius:3px}
+.book-item{background:var(--bg2);border-radius:var(--r);padding:10px 12px;margin-bottom:6px}
+.book-title{font-size:13px;font-weight:500}
+.book-meta{font-size:12px;color:var(--text2)}
+.book-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;margin-top:4px}
+.badge-loisir{background:#eeedfe;color:#3c3489}
+.badge-capes{background:#fbeaf0;color:#72243e}
+
+/* ─── BILAN SPORT ─── */
+.hero-sport{background:var(--bg2);border-radius:var(--rl);padding:16px 18px;margin-bottom:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.hero-num{font-family:'DM Serif Display',serif;font-size:38px;color:#27500a;line-height:1}
+.hero-label{font-size:11px;color:#3b6d11;font-weight:500;margin-bottom:3px}
+.hero-eq{font-size:12px;color:var(--text2);margin-top:5px}
+.progress-bar{height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;margin:4px 0}
+.progress-fill{height:100%;border-radius:4px}
+.sport-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:12px}
+.sport-bar-name{min-width:95px;color:var(--text2);text-transform:capitalize}
+.sport-bar-wrap{flex:1;height:9px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.sport-bar-fill{height:100%;border-radius:4px}
+.sport-bar-val{min-width:52px;text-align:right;font-weight:500;font-size:12px}
+.xp-card{border:0.5px solid var(--border);border-radius:var(--r);padding:13px 15px;margin-bottom:8px}
+.xp-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;flex-wrap:wrap;gap:4px}
+.xp-title{font-size:13px;font-weight:500}
+.xp-badge{font-size:11px;padding:3px 9px;border-radius:20px}
+.xp-footer{display:flex;justify-content:space-between;font-size:11px;margin-top:5px}
+.cal-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border);font-size:12px}
+.cal-row:last-child{border-bottom:none}
+.legend-row{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text2);margin-bottom:8px}
+.leg-item{display:flex;align-items:center;gap:5px}
+.leg-sq{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.divider{height:0.5px;background:var(--border);margin:16px 0}
+.chart-wrap{position:relative;width:100%}
+
+/* ─── ENERGY SLIDER ─── */
+.energy-row{display:flex;align-items:center;gap:10px}
+.energy-row input[type=range]{flex:1;accent-color:var(--text)}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="app-header">
+  <div class="app-title">Carnet de bord</div>
+  <div class="header-actions">
+    <button class="drive-btn" id="dropbox-btn" onclick="connectDropbox()">Connecter Dropbox</button>
+    <div class="app-date" id="header-date"></div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('cal',this)">Calendrier</button>
+  <button class="tab" onclick="showTab('stats',this)">Statistiques</button>
+  <button class="tab" onclick="showTab('sport',this)">Bilan sport</button>
+</div>
+
+<!-- ═══════════════ CALENDRIER ═══════════════ -->
+<div id="tab-cal" class="panel active">
+  <div id="cal-view">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="changeMonth(-1)">&#8592;</button>
+      <span class="month-label" id="month-label"></span>
+      <button class="cal-nav-btn" onclick="changeMonth(1)">&#8594;</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="legend">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e24b4a;margin-right:3px"></span>humeur</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#185fa5;margin-right:3px"></span>sport</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#7f77dd;margin-right:3px"></span>écriture</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#d4537e;margin-right:3px"></span>CAPES</span>
+      <span><span style="color:#ba7517">★</span> complétion</span>
+    </div>
+  </div>
+  <div id="sheet-view" style="display:none">
+    <button class="back-btn" onclick="showCal()">&#8592; Calendrier</button>
+    <div id="sheet-content"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ STATISTIQUES ═══════════════ -->
+<div id="tab-stats" class="panel">
+  <div class="stat-tabs">
+    <button class="st active" onclick="showStat('week',this)">Semaine</button>
+    <button class="st" onclick="showStat('month',this)">Mois</button>
+    <button class="st" onclick="showStat('year',this)">Année</button>
+  </div>
+  <div id="stat-content"></div>
+</div>
+
+<!-- ═══════════════ BILAN SPORT ═══════════════ -->
+<div id="tab-sport" class="panel">
+  <div id="sport-bilan"></div>
+</div>
+
+</div><!-- /container -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+/* ════════════════════════════════════════
+   CONSTANTES & DONNÉES DE RÉFÉRENCE
+   ════════════════════════════════════════ */
+const MONTHS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const DAYS_S=['Lu','Ma','Me','Je','Ve','Sa','Di'];
+const MOODS=[{k:'vl',l:'Très basse'},{k:'l',l:'Basse'},{k:'n',l:'Neutre'},{k:'g',l:'Bonne'},{k:'vg',l:'Très bonne'},{k:'h',l:'Agitation'}];
+const MOOD_LABELS={vl:'Très basse',l:'Basse',n:'Neutre',g:'Bonne',vg:'Très bonne',h:'Agitation'};
+const MOOD_COLORS={vl:'#e24b4a',l:'#f09595',n:'#888780',g:'#639922',vg:'#1d9e75',h:'#ba7517'};
+const SPORTS=['marche','escalade','natation','course','renforcement','vélo'];
+const SPORT_COLORS={marche:'#378ADD',escalade:'#D85A30',natation:'#1D9E75',course:'#E24B4A',renforcement:'#7F77DD',vélo:'#BA7517'};
+const SPORT_KCAL_MIN={marche:4.5,escalade:8,natation:8.5,course:10,renforcement:6,vélo:7};
+const SPORT_FIELDS={
+  marche:['durée (min)','distance (km)','pas','intensité','ressenti'],
+  escalade:['durée (min)','niveau','voies/blocs','ressenti','douleur'],
+  natation:['durée (min)','distance (m)','type séance','ressenti'],
+  course:['durée (min)','distance (km)','allure','ressenti','douleur'],
+  renforcement:['durée (min)','type séance','exercices','difficulté','ressenti'],
+  vélo:['durée (min)','distance (km)','intensité','ressenti']
+};
+const FIXED_TODOS=[
+  {key:'menage',label:'Ménage'},{key:'cuisine',label:'Cuisine'},
+  {key:'rangement',label:'Rangement'},{key:'vaisselle',label:'Vaisselle'},
+  {key:'commentaire',label:'Commentaire'},{key:'travail',label:'Travail'}
+];
+const ENTRAIN_OPTS=['dissertation','commentaire','oral','chronologie','plan détaillé','autre'];
+const OBJ_KCAL_MONTH=7000;
+const USER_HEIGHT_M=1.87;
+const MEAL_KCAL_DEFAULTS={vert:1900,jaune:2300,orange:2800,rouge:3400,noir:0,gris:0};
+const COCA_KCAL_PER_CAN=140;
+
+/* ════════════════════════════════════════
+   ÉTAT GLOBAL
+   ════════════════════════════════════════ */
+const now=new Date();
+let curYear=now.getFullYear(),curMonth=now.getMonth(),selKey=null,curStat='week';
+let sportChartWeekly=null,sportChartCumul=null,sportChartCompare=null;
+
+/* ────── Chargement / sauvegarde localStorage + Dropbox ──────
+   1) Crée une app sur https://www.dropbox.com/developers/apps
+   2) Type : Scoped access / App folder
+   3) Permissions : files.content.read + files.content.write
+   4) Redirect URI : l'adresse exacte où tourne cette page, ex. http://localhost:8000/bullet_journal_v6_dropbox.html
+   5) Remplace DROPBOX_APP_KEY ci-dessous par ton App key.
+*/
+const DROPBOX_APP_KEY='mimjsae5tdcsijp';
+const DROPBOX_FILE_PATH='/carnet.json';
+const DROPBOX_SCOPES='files.content.read files.content.write';
+let dropboxAccessToken=localStorage.getItem('bj_dropbox_access_token')||null;
+let dropboxTokenExpiresAt=+(localStorage.getItem('bj_dropbox_expires_at')||0);
+let dropboxSaveTimer=null;
+
+function loadData(){
+  try{return JSON.parse(localStorage.getItem('bj_v3')||'{}')}catch(e){return {}}
+}
+function saveData(){
+  localStorage.setItem('bj_v3',JSON.stringify(DATA));
+  scheduleDropboxSave();
+}
+let DATA=loadData();
+
+function currentRedirectUri(){return location.origin+location.pathname;}
+function updateDropboxButton(txt,connected=false){
+  const b=document.getElementById('dropbox-btn');
+  if(!b)return;
+  b.textContent=txt;
+  b.classList.toggle('connected',connected);
+}
+function dropboxTokenValid(){return !!dropboxAccessToken && Date.now()<dropboxTokenExpiresAt-60000;}
+function base64Url(buf){return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function randomString(len=64){
+  const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  const arr=new Uint8Array(len);crypto.getRandomValues(arr);
+  return Array.from(arr,b=>chars[b%chars.length]).join('');
+}
+async function sha256(txt){return crypto.subtle.digest('SHA-256',new TextEncoder().encode(txt));}
+async function connectDropbox(){
+  if(DROPBOX_APP_KEY.startsWith('REMPLACE_MOI')){
+    alert('Il faut d’abord créer une app Dropbox et remplacer DROPBOX_APP_KEY dans le HTML.');
+    updateDropboxButton('Config Dropbox requise');return;
+  }
+  const verifier=randomString(96);
+  const challenge=base64Url(await sha256(verifier));
+  sessionStorage.setItem('bj_dropbox_code_verifier',verifier);
+  const url=new URL('https://www.dropbox.com/oauth2/authorize');
+  url.searchParams.set('client_id',DROPBOX_APP_KEY);
+  url.searchParams.set('response_type','code');
+  url.searchParams.set('code_challenge',challenge);
+  url.searchParams.set('code_challenge_method','S256');
+  url.searchParams.set('token_access_type','online');
+  url.searchParams.set('scope',DROPBOX_SCOPES);
+  url.searchParams.set('redirect_uri',currentRedirectUri());
+  location.href=url.toString();
+}
+async function finishDropboxAuthIfNeeded(){
+  const params=new URLSearchParams(location.search);
+  const code=params.get('code');
+  if(!code){
+    updateDropboxButton(dropboxTokenValid()?'Dropbox connecté':'Connecter Dropbox',dropboxTokenValid());
+    return;
+  }
+  const verifier=sessionStorage.getItem('bj_dropbox_code_verifier');
+  history.replaceState({},document.title,currentRedirectUri());
+  if(!verifier){updateDropboxButton('Dropbox à reconnecter');return;}
+  try{
+    updateDropboxButton('Connexion Dropbox…');
+    const body=new URLSearchParams({
+      code,grant_type:'authorization_code',client_id:DROPBOX_APP_KEY,
+      code_verifier:verifier,redirect_uri:currentRedirectUri()
+    });
+    const res=await fetch('https://api.dropboxapi.com/oauth2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    if(!res.ok)throw new Error(await res.text());
+    const tok=await res.json();
+    dropboxAccessToken=tok.access_token;
+    dropboxTokenExpiresAt=Date.now()+((tok.expires_in||14400)*1000);
+    localStorage.setItem('bj_dropbox_access_token',dropboxAccessToken);
+    localStorage.setItem('bj_dropbox_expires_at',String(dropboxTokenExpiresAt));
+    sessionStorage.removeItem('bj_dropbox_code_verifier');
+    updateDropboxButton('Dropbox connecté',true);
+    await syncFromDropbox();
+  }catch(e){console.error(e);updateDropboxButton('Erreur Dropbox');alert('Erreur de connexion Dropbox. Vérifie l’App key et le Redirect URI.');}
+}
+function disconnectDropbox(){
+  dropboxAccessToken=null;dropboxTokenExpiresAt=0;
+  localStorage.removeItem('bj_dropbox_access_token');localStorage.removeItem('bj_dropbox_expires_at');
+  updateDropboxButton('Connecter Dropbox',false);
+}
+async function dropboxApi(url,opts={}){
+  if(!dropboxTokenValid())throw new Error('Dropbox non connecté ou session expirée');
+  const res=await fetch(url,{...opts,headers:{Authorization:`Bearer ${dropboxAccessToken}`,...(opts.headers||{})}});
+  if(!res.ok)throw new Error(await res.text());
+  return res;
+}
+async function syncFromDropbox(){
+  if(!dropboxTokenValid()){updateDropboxButton('Connecter Dropbox');return;}
+  try{
+    updateDropboxButton('Lecture Dropbox…',true);
+    const res=await dropboxApi('https://content.dropboxapi.com/2/files/download',{
+      method:'POST',headers:{'Dropbox-API-Arg':JSON.stringify({path:DROPBOX_FILE_PATH})}
+    });
+    const remote=JSON.parse(await res.text());
+    if(remote&&typeof remote==='object'){
+      DATA=remote;localStorage.setItem('bj_v3',JSON.stringify(DATA));
+      renderCal();renderStats();if(document.getElementById('tab-sport').classList.contains('active'))renderBilanSport();
+      updateDropboxButton('Dropbox synchronisé',true);
+    }
+  }catch(e){
+    const msg=String(e.message||e);
+    if(msg.includes('path/not_found')){await uploadDropboxFile();return;}
+    console.error(e);updateDropboxButton('Erreur lecture Dropbox',false);
+  }
+}
+async function uploadDropboxFile(){
+  if(!dropboxTokenValid())return;
+  try{
+    updateDropboxButton('Sauvegarde Dropbox…',true);
+    await dropboxApi('https://content.dropboxapi.com/2/files/upload',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/octet-stream',
+        'Dropbox-API-Arg':JSON.stringify({path:DROPBOX_FILE_PATH,mode:'overwrite',autorename:false,mute:true,strict_conflict:false})
+      },
+      body:JSON.stringify(DATA,null,2)
+    });
+    updateDropboxButton('Dropbox sauvegardé',true);
+  }catch(e){console.error(e);updateDropboxButton('Erreur save Dropbox',false);}
+}
+function scheduleDropboxSave(){
+  if(!dropboxTokenValid())return;
+  clearTimeout(dropboxSaveTimer);
+  dropboxSaveTimer=setTimeout(uploadDropboxFile,900);
+}
+/* ════════════════════════════════════════
+   UTILITAIRES
+   ════════════════════════════════════════ */
+function dk(y,m,d){return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
+function moodCol(m){return MOOD_COLORS[m]||'#888780'}
+function initDay(k){DATA[k]=DATA[k]||{sport:[],sportData:{},books:[],socialMeetings:[],fixedTodos:{}};return DATA[k]}
+function sleepDur(s,e){
+  if(!s||!e)return '—';
+  const[sh,sm]=s.split(':').map(Number),[eh,em]=e.split(':').map(Number);
+  let m=(eh*60+em)-(sh*60+sm);if(m<0)m+=1440;
+  return `${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}`;
+}
+function calcStars(d){
+  let n=0;
+  if(d.mood)n++;if(d.energy)n++;
+  if(d.sport&&d.sport.length)n++;
+  if(d.pages||d.writingNote)n++;
+  if(d.fiches||d.capesNote||(d.entrains&&d.entrains.length))n++;
+  if(d.journal||d.event||d.activity)n++;
+  if(d.books&&d.books.length)n++;
+  return n===0?0:n===1?1:n<=3?2:n<=5?3:4;
+}
+function renderStars(n){let s='';for(let i=1;i<=4;i++)s+=`<span class="${i<=n?'star-on':'star-off'}">★</span>`;return s;}
+
+/* ════════════════════════════════════════
+   NAVIGATION ONGLETS
+   ════════════════════════════════════════ */
+function showTab(t,btn){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t==='stats')renderStats(curStat);
+  if(t==='sport')renderBilanSport();
+}
+
+/* ════════════════════════════════════════
+   CALENDRIER
+   ════════════════════════════════════════ */
+function renderCal(){
+  document.getElementById('month-label').textContent=`${MONTHS[curMonth]} ${curYear}`;
+  const g=document.getElementById('cal-grid');g.innerHTML='';
+  DAYS_S.forEach(d=>{const h=document.createElement('div');h.className='cal-header';h.textContent=d;g.appendChild(h);});
+  const first=new Date(curYear,curMonth,1).getDay();
+  const off=(first===0?6:first-1),tot=new Date(curYear,curMonth+1,0).getDate();
+  for(let i=0;i<off;i++){const e=document.createElement('div');e.className='cal-day empty';g.appendChild(e);}
+  for(let d=1;d<=tot;d++){
+    const k=dk(curYear,curMonth,d),day=DATA[k]||{};
+    const isToday=now.getFullYear()===curYear&&now.getMonth()===curMonth&&now.getDate()===d;
+    const el=document.createElement('div');
+    el.className='cal-day'+(isToday?' today':'')+(selKey===k?' selected':'');
+    const st=calcStars(day);
+    let dots='';
+    if(day.mood)dots+=`<div class="dot" style="background:${moodCol(day.mood)}"></div>`;
+    if(day.sport&&day.sport.length)dots+=`<div class="dot" style="background:#185fa5"></div>`;
+    if(day.pages||day.writingNote)dots+=`<div class="dot" style="background:#7f77dd"></div>`;
+    if(day.fiches||day.capesNote)dots+=`<div class="dot" style="background:#d4537e"></div>`;
+    if(day.books&&day.books.length)dots+=`<div class="dot" style="background:#534ab7"></div>`;
+    el.innerHTML=`<div class="day-num">${d}</div><div class="day-dots">${dots}</div><div class="stars">${renderStars(st)}</div>`;
+    el.onclick=()=>openDay(k,d);g.appendChild(el);
+  }
+}
+function changeMonth(dir){
+  curMonth+=dir;
+  if(curMonth<0){curMonth=11;curYear--;}
+  if(curMonth>11){curMonth=0;curYear++;}
+  renderCal();
+}
+function openDay(k,d){
+  selKey=k;renderCal();
+  document.getElementById('cal-view').style.display='none';
+  document.getElementById('sheet-view').style.display='block';
+  buildSheet(k,d);
+}
+function showCal(){
+  document.getElementById('cal-view').style.display='';
+  document.getElementById('sheet-view').style.display='none';
+  selKey=null;renderCal();
+}
+
+/* ════════════════════════════════════════
+   FICHE QUOTIDIENNE
+   ════════════════════════════════════════ */
+function buildSheet(k,d){
+  const day=DATA[k]||{};
+  document.getElementById('sheet-content').innerHTML=`
+  <div class="sheet-header">
+    <div class="sheet-date">${d} ${MONTHS[curMonth]} ${curYear}</div>
+    <div class="sheet-stars" id="stars-${k}">${renderStars(calcStars(day))}</div>
+  </div>
+  ${secMental(day,k)}
+  ${secSport(day,k)}
+  ${secRoman(day,k)}
+  ${secCapes(day,k)}
+  ${secVie(day,k)}
+  <div style="margin-top:14px">
+    <button class="save-btn" onclick="saveDay('${k}')">Sauvegarder</button>
+    <div class="save-msg" id="smsg-${k}">Sauvegardé ✓</div>
+  </div>`;
+}
+
+/* ── Section : Santé mentale ── */
+function secMental(d,k){
+  const mBtns=MOODS.map(m=>`<button class="mb${d.mood===m.k?' sel-'+m.k:''}" onclick="setMood('${k}','${m.k}',this)">${m.l}</button>`).join('');
+  const sqOpts=['Mauvais','Moyen','Correct','Bon'].map(q=>`<button class="mb${d.sleepQ===q?' sel-ok':''}" onclick="setSleepQ('${k}','${q}',this)">${q}</button>`).join('');
+  const en=d.energy||5;
+  return `<div class="section">
+  <div class="sec-head" onclick="toggleSec(this)"><span class="sec-title">Santé mentale</span><span class="sec-arrow">▼</span></div>
+  <div class="sec-body">
+    <div class="fl"><div class="lbl">Humeur du jour</div><div class="mood-btns">${mBtns}</div></div>
+    <div class="fl"><div class="lbl">Énergie — <span id="ev-${k}">${en}</span>/10</div>
+      <div class="energy-row"><input type="range" min="1" max="10" step="1" value="${en}" oninput="document.getElementById('ev-${k}').textContent=this.value;initDay('${k}').energy=+this.value;refreshSt('${k}')"></div></div>
+    <div class="two">
+      <div class="fl"><div class="lbl">Sommeil — début</div><input type="time" id="ss-${k}" value="${d.sleepStart||''}" oninput="updSleep('${k}')"></div>
+      <div class="fl"><div class="lbl">Sommeil — fin</div><input type="time" id="se-${k}" value="${d.sleepEnd||''}" oninput="updSleep('${k}')"></div>
+    </div>
+    <div class="lbl">Durée calculée : <span id="sd-${k}">${sleepDur(d.sleepStart,d.sleepEnd)}</span></div>
+    <div class="fl"><div class="lbl">Qualité du sommeil</div><div class="mood-btns">${sqOpts}</div></div>
+    <div class="fl"><div class="lbl">Note du jour</div><textarea id="mn-${k}" placeholder="Comment tu te sens...">${d.mentalNote||''}</textarea></div>
+    <div class="fl"><div class="lbl">Médicaments</div><textarea id="med-${k}" placeholder="Médicament — posologie — horaire — pris / oublié / décalé">${d.meds||''}</textarea></div>
+  </div></div>`;
+}
+
+/* ── Section : Sport & Poids ── */
+function secSport(d,k){
+  const sel=d.sport||[];
+  const chips=SPORTS.map(s=>`<button class="chip${sel.includes(s)?' sel':''}" onclick="toggleSport('${k}','${s}',this)">${s}</button>`).join('');
+  let dets='';
+  sel.forEach(s=>{
+    const f=SPORT_FIELDS[s]||[],sd=(d.sportData&&d.sportData[s])||{};
+    dets+=`<div class="sport-det"><div style="font-size:12px;font-weight:500;margin-bottom:5px;text-transform:capitalize">${s}</div>${f.map(fld=>`<div class="fl"><div class="lbl">${fld}</div><input type="text" value="${sd[fld]||''}" data-sport="${s}" data-field="${fld}" oninput="updSportF('${k}',this)"></div>`).join('')}</div>`;
+  });
+  const cocaMl=d.cocaMl||'';
+  const mealKcal=d.mealKcal||'';
+  return `<div class="section">
+  <div class="sec-head" onclick="toggleSec(this)"><span class="sec-title">Sport &amp; Poids</span><span class="sec-arrow">▼</span></div>
+  <div class="sec-body">
+    <div class="fl"><div class="lbl">Sport(s) du jour</div><div class="chips" id="schips-${k}">${chips}</div></div>
+    <div id="sdets-${k}">${dets}</div>
+    <div class="fl"><div class="lbl">Poids (kg) — alimente le tracker IMC</div><input type="number" step="0.1" placeholder="91.5" value="${d.weight||''}" oninput="initDay('${k}').weight=parseFloat(this.value)||null"></div>
+    <div class="fl"><div class="lbl">Hygiène repas</div>
+      <div class="color-row">${[['#639922','vert','Très bon'],['#f0c040','jaune','Correct'],['#ef9f27','orange','Moyen'],['#e24b4a','rouge','Mauvais'],['#2c2c2a','noir','Aucun'],['#b4b2a9','gris','Non renseigné']].map(([c,l,t])=>`<div class="cdot${(d.meal===l)?' sel':''}" style="background:${c}" title="${t}" onclick="setMeal('${k}','${l}',this)"></div>`).join('')}
+      </div></div>
+    <div class="two">
+      <div class="fl"><div class="lbl">Calories repas estimées</div><input type="number" min="0" step="50" placeholder="ex: 2300" value="${mealKcal}" oninput="initDay('${k}').mealKcal=+this.value||0"></div>
+      <div class="fl"><div class="lbl">Coca bu (ml)</div><input type="number" min="0" step="50" placeholder="0" value="${cocaMl}" oninput="initDay('${k}').cocaMl=+this.value||0;initDay('${k}').coca=(+this.value||0)>0"></div>
+    </div>
+    <div class="fl"><div class="lbl">Coca = mal</div><div class="mood-btns">
+      <button class="mb${d.coca===true?' sel-ok':''}" onclick="setCoca('${k}',true,this)">Oui — le démon pétillant</button>
+      <button class="mb${d.coca===false?' sel-ok':''}" onclick="setCoca('${k}',false,this)">Non — sobriété héroïque</button>
+    </div></div>
+    <div class="fl"><div class="lbl">Note alimentaire</div><textarea id="mealNote-${k}" placeholder="Repas du jour, grignotages, restaurants, compulsions, victoire contre le coca...">${d.mealNote||''}</textarea></div>
+  </div></div>`;
+}
+
+/* ── Section : Roman ── */
+function secRoman(d,k){
+  return `<div class="section">
+  <div class="sec-head" onclick="toggleSec(this)"><span class="sec-title">Roman</span><span class="sec-arrow">▼</span></div>
+  <div class="sec-body">
+    <div class="two">
+      <div class="fl"><div class="lbl">Pages écrites</div><input type="number" min="0" id="pg-${k}" value="${d.pages||''}" oninput="initDay('${k}').pages=+this.value||0;refreshSt('${k}')"></div>
+      <div class="fl"><div class="lbl">Pages relues</div><input type="number" min="0" id="pr-${k}" value="${d.pagesRead||''}" oninput="initDay('${k}').pagesRead=+this.value||0"></div>
+    </div>
+    <div class="fl"><div class="lbl">Notes / idées / blocages</div><textarea id="wn-${k}" placeholder="Ce que tu as travaillé, des idées, des blocages...">${d.writingNote||''}</textarea></div>
+  </div></div>`;
+}
+
+/* ── Section : CAPES ── */
+function secCapes(d,k){
+  const eChips=ENTRAIN_OPTS.map(e=>`<button class="chip${(d.entrains||[]).includes(e)?' sel':''}" onclick="toggleEntrain('${k}','${e}',this)">${e}</button>`).join('');
+  return `<div class="section">
+  <div class="sec-head" onclick="toggleSec(this)"><span class="sec-title">CAPES</span><span class="sec-arrow">▼</span></div>
+  <div class="sec-body">
+    <div class="fl"><div class="lbl">Fiches faites</div><input type="number" min="0" id="fi-${k}" value="${d.fiches||''}" oninput="initDay('${k}').fiches=+this.value||0;refreshSt('${k}')"></div>
+    <div class="fl"><div class="lbl">Entraînements</div><div class="chips">${eChips}</div></div>
+    <div class="fl"><div class="lbl">Livres CAPES (titre, auteur, avancement)</div><textarea id="cb-${k}" placeholder="ex: Le Parti imaginaire — Comité invisible — en cours">${d.capesBooks||''}</textarea></div>
+    <div class="fl"><div class="lbl">Notes de méthode</div><textarea id="cn-${k}" placeholder="Ce que tu as travaillé...">${d.capesNote||''}</textarea></div>
+  </div></div>`;
+}
+
+/* ── Section : Vie quotidienne ── */
+function secVie(d,k){
+  return `<div class="section">
+  <div class="sec-head" onclick="toggleSec(this)"><span class="sec-title">Vie quotidienne</span><span class="sec-arrow">▼</span></div>
+  <div class="sec-body">
+    <div class="fl"><div class="lbl">Événement important</div><input type="text" id="ev-k-${k}" value="${d.event||''}" placeholder="Quelque chose de notable..." oninput="initDay('${k}').event=this.value"></div>
+    <div class="fl"><div class="lbl">Activité du jour</div><input type="text" id="act-${k}" value="${d.activity||''}" placeholder="cinéma, musée, balade, concert..." oninput="initDay('${k}').activity=this.value;refreshSt('${k}')"></div>
+    <div class="fl"><div class="lbl">Tâches du jour</div>${buildTodos(d,k)}</div>
+    ${buildBooks(d,k)}
+    ${buildSocial(d,k)}
+    <div class="fl"><div class="lbl">Journaling libre</div><textarea id="jn-${k}" placeholder="Écriture libre...">${d.journal||''}</textarea></div>
+  </div></div>`;
+}
+
+function buildTodos(d,k){
+  const ft=d.fixedTodos||{};
+  return `<div class="todo-fixed">${FIXED_TODOS.map(t=>`
+    <div class="todo-row">
+      <input type="checkbox" class="todo-check" ${ft[t.key]?.done?'checked':''} onchange="toggleTodo('${k}','${t.key}',this)">
+      <span class="todo-label${ft[t.key]?.done?' done':''}" id="tlbl-${k}-${t.key}">${t.label}</span>
+    </div>`).join('')}</div>`;
+}
+function buildBooks(d,k){
+  const books=d.books||[];
+  const rows=books.map((b,i)=>`
+    <div class="add-item">
+      <div class="add-item-header"><span style="font-size:12px;font-weight:500">${b.title||'Nouveau livre'}</span><button class="rm-btn" onclick="removeBook('${k}',${i})">×</button></div>
+      <div class="fl"><div class="lbl">Titre</div><input type="text" value="${b.title||''}" data-bi="${i}" data-bf="title" oninput="updBook('${k}',this)"></div>
+      <div class="fl"><div class="lbl">Auteur</div><input type="text" value="${b.author||''}" data-bi="${i}" data-bf="author" oninput="updBook('${k}',this)"></div>
+      <div class="two">
+        <div class="fl"><div class="lbl">Type</div><select data-bi="${i}" data-bf="type" onchange="updBook('${k}',this)"><option value="loisir"${b.type==='loisir'?' selected':''}>Loisir</option><option value="capes"${b.type==='capes'?' selected':''}>CAPES</option></select></div>
+        <div class="fl"><div class="lbl">Statut</div><select data-bi="${i}" data-bf="status" onchange="updBook('${k}',this)"><option value="à lire"${b.status==='à lire'?' selected':''}>À lire</option><option value="en cours"${b.status==='en cours'?' selected':''}>En cours</option><option value="terminé"${b.status==='terminé'?' selected':''}>Terminé</option></select></div>
+      </div>
+      <div class="two">
+        <div class="fl"><div class="lbl">Début</div><input type="date" value="${b.startDate||''}" data-bi="${i}" data-bf="startDate" oninput="updBook('${k}',this)"></div>
+        <div class="fl"><div class="lbl">Fin</div><input type="date" value="${b.endDate||''}" data-bi="${i}" data-bf="endDate" oninput="updBook('${k}',this)"></div>
+      </div>
+      <div class="two">
+        <div class="fl"><div class="lbl">Pages du livre</div><input type="number" min="0" value="${b.totalPages||''}" data-bi="${i}" data-bf="totalPages" oninput="updBook('${k}',this)"></div>
+        <div class="fl"><div class="lbl">Page atteinte</div><input type="number" min="0" value="${b.currentPage||''}" data-bi="${i}" data-bf="currentPage" oninput="updBook('${k}',this)"></div>
+      </div>
+      <div class="fl"><div class="lbl">Note</div><input type="text" value="${b.note||''}" placeholder="facultatif" data-bi="${i}" data-bf="note" oninput="updBook('${k}',this)"></div>
+    </div>`).join('');
+  return `<div class="fl"><div class="lbl">Lecture du jour</div>${rows}<button class="add-btn" onclick="addBook('${k}')">+ Ajouter un livre</button></div>`;
+}
+function buildSocial(d,k){
+  const ms=d.socialMeetings||[];
+  const rows=ms.map((m,i)=>`
+    <div class="add-item">
+      <div class="add-item-header"><span style="font-size:12px;font-weight:500">${m.who||'Rencontre'}</span><button class="rm-btn" onclick="removeSocial('${k}',${i})">×</button></div>
+      <div class="two">
+        <div class="fl"><div class="lbl">Qui</div><input type="text" value="${m.who||''}" data-si="${i}" data-sf="who" oninput="updSocial('${k}',this)"></div>
+        <div class="fl"><div class="lbl">Contexte</div><input type="text" value="${m.context||''}" placeholder="café, dîner..." data-si="${i}" data-sf="context" oninput="updSocial('${k}',this)"></div>
+      </div>
+      <div class="fl"><div class="lbl">Note</div><input type="text" value="${m.note||''}" placeholder="facultatif" data-si="${i}" data-sf="note" oninput="updSocial('${k}',this)"></div>
+    </div>`).join('');
+  return `<div class="fl"><div class="lbl">Rencontres sociales</div>${rows}<button class="add-btn" onclick="addSocial('${k}')">+ Ajouter une rencontre</button></div>`;
+}
+
+/* ════════════════════════════════════════
+   HANDLERS FORMULAIRE
+   ════════════════════════════════════════ */
+function toggleSec(h){const b=h.nextElementSibling;b.classList.toggle('open');h.querySelector('.sec-arrow').style.transform=b.classList.contains('open')?'rotate(180deg)':'';}
+function setMood(k,m,btn){initDay(k).mood=m;btn.closest('.mood-btns').querySelectorAll('.mb').forEach(b=>b.className='mb');btn.className=`mb sel-${m}`;refreshSt(k);}
+function setSleepQ(k,q,btn){initDay(k).sleepQ=q;btn.closest('.mood-btns').querySelectorAll('.mb').forEach(b=>b.className='mb');btn.className='mb sel-ok';}
+function setMeal(k,c,dot){initDay(k).meal=c;dot.closest('.color-row').querySelectorAll('.cdot').forEach(d=>d.classList.remove('sel'));dot.classList.add('sel');}
+function setCoca(k,v,btn){initDay(k).coca=v;btn.closest('.mood-btns').querySelectorAll('.mb').forEach(b=>b.className='mb');btn.className='mb sel-ok';}
+function updSleep(k){const s=document.getElementById('ss-'+k).value,e=document.getElementById('se-'+k).value;initDay(k).sleepStart=s;initDay(k).sleepEnd=e;document.getElementById('sd-'+k).textContent=sleepDur(s,e);}
+function toggleSport(k,s,btn){
+  const day=initDay(k);day.sport=day.sport||[];
+  const i=day.sport.indexOf(s);if(i>=0){day.sport.splice(i,1);btn.classList.remove('sel');}else{day.sport.push(s);btn.classList.add('sel');}
+  const dd=document.getElementById('sdets-'+k);
+  if(dd){let dets='';day.sport.forEach(sp=>{const f=SPORT_FIELDS[sp]||[],sd=(day.sportData&&day.sportData[sp])||{};dets+=`<div class="sport-det"><div style="font-size:12px;font-weight:500;margin-bottom:5px;text-transform:capitalize">${sp}</div>${f.map(fld=>`<div class="fl"><div class="lbl">${fld}</div><input type="text" value="${sd[fld]||''}" data-sport="${sp}" data-field="${fld}" oninput="updSportF('${k}',this)"></div>`).join('')}</div>`;});dd.innerHTML=dets;}
+  refreshSt(k);
+}
+function updSportF(k,input){const day=initDay(k);day.sportData=day.sportData||{};const s=input.dataset.sport,f=input.dataset.field;day.sportData[s]=day.sportData[s]||{};day.sportData[s][f]=input.value;}
+function toggleEntrain(k,e,btn){const day=initDay(k);day.entrains=day.entrains||[];const i=day.entrains.indexOf(e);if(i>=0){day.entrains.splice(i,1);btn.classList.remove('sel');}else{day.entrains.push(e);btn.classList.add('sel');}refreshSt(k);}
+function toggleTodo(k,key,cb){const day=initDay(k);day.fixedTodos=day.fixedTodos||{};day.fixedTodos[key]=day.fixedTodos[key]||{};day.fixedTodos[key].done=cb.checked;const lbl=document.getElementById(`tlbl-${k}-${key}`);if(lbl)lbl.className='todo-label'+(cb.checked?' done':'');}
+function addBook(k){const day=initDay(k);day.books=day.books||[];day.books.push({title:'',author:'',type:'loisir',status:'en cours',startDate:k,endDate:'',totalPages:0,currentPage:0,note:''});rebuildVie(k);}
+function removeBook(k,i){initDay(k).books.splice(i,1);rebuildVie(k);}
+function updBook(k,input){const day=initDay(k);const i=+input.dataset.bi,f=input.dataset.bf;day.books[i]=day.books[i]||{};day.books[i][f]=(f==='totalPages'||f==='currentPage')?(+input.value||0):(input.tagName==='SELECT'?input.options[input.selectedIndex].value:input.value);refreshSt(k);}
+function addSocial(k){const day=initDay(k);day.socialMeetings=day.socialMeetings||[];day.socialMeetings.push({who:'',context:'',note:''});rebuildVie(k);}
+function removeSocial(k,i){initDay(k).socialMeetings.splice(i,1);rebuildVie(k);}
+function updSocial(k,input){const day=initDay(k);const i=+input.dataset.si,f=input.dataset.sf;day.socialMeetings[i]=day.socialMeetings[i]||{};day.socialMeetings[i][f]=input.value;}
+function rebuildVie(k){const d=parseInt(k.split('-')[2]);buildSheet(k,d);}
+function refreshSt(k){const el=document.getElementById('stars-'+k);if(el)el.innerHTML=renderStars(calcStars(DATA[k]||{}));}
+
+/* ── Collecte des champs texte avant save ── */
+function collectSheet(k){
+  const day=initDay(k);
+  const g=id=>document.getElementById(id+k);
+  const set=(id,field,parse)=>{const el=g(id);if(el&&el.value!=='')day[field]=parse?parse(el.value):el.value;};
+  set('mn-','mentalNote');set('med-','meds');set('wn-','writingNote');
+  set('jn-','journal');set('cb-','capesBooks');set('cn-','capesNote');
+  set('ev-k-','event');set('act-','activity');set('mealNote-','mealNote');
+  set('pg-','pages',v=>+v||0);set('pr-','pagesRead',v=>+v||0);set('fi-','fiches',v=>+v||0);
+}
+function saveDay(k){
+  collectSheet(k);DATA[k].stars=calcStars(DATA[k]);
+  saveData();renderCal();
+  const m=document.getElementById('smsg-'+k);m.style.display='block';setTimeout(()=>m.style.display='none',2000);
+}
+
+/* ════════════════════════════════════════
+   STATISTIQUES GÉNÉRALES
+   ════════════════════════════════════════ */
+function showStat(p,btn){curStat=p;document.querySelectorAll('.st').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderStats(p);}
+
+function statRange(period){
+  const end=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  let start=new Date(end);
+  if(period==='week')start.setDate(end.getDate()-6);
+  else if(period==='month')start=new Date(end.getFullYear(),end.getMonth(),1);
+  else start=new Date(end.getFullYear(),0,1);
+  return {start,end};
+}
+function parseDateKey(k){const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d);}
+function inRangeKey(k,start,end){const dt=parseDateKey(k);return dt>=start&&dt<=end;}
+function mealCalories(d){if(d.mealKcal)return +d.mealKcal||0;return MEAL_KCAL_DEFAULTS[d.meal]||0;}
+function cocaMl(d){if(d.cocaMl)return +d.cocaMl||0;return d.coca===true?330:0;}
+function bmiForWeight(w){return w?Math.round((w/(USER_HEIGHT_M*USER_HEIGHT_M))*10)/10:null;}
+function bmiLabel(b){if(!b)return '—';if(b<18.5)return 'sous la zone IMC';if(b<25)return 'zone IMC dite normale';if(b<30)return 'surpoids IMC';return 'obésité IMC';}
+function latestWeight(entries){const vals=entries.filter(([,d])=>d.weight).sort(([a],[b])=>a.localeCompare(b));return vals.length?{date:vals[vals.length-1][0],weight:+vals[vals.length-1][1].weight}:null;}
+function safeDaysBetween(a,b){if(!a||!b)return null;const da=new Date(a),db=new Date(b);if(Number.isNaN(+da)||Number.isNaN(+db)||db<da)return null;return Math.max(1,Math.round((db-da)/(24*3600*1000))+1);}
+function funnyBookLine(b){const pages=+b.totalPages||+b.currentPage||0;const days=safeDaysBetween(b.startDate,b.endDate||new Date().toISOString().slice(0,10));const ppd=(pages&&days)?Math.round(pages/days*10)/10:null;if(!pages)return 'volume métaphysique sans pagination connue';if(ppd&&ppd>80)return `rythme TGV : ${ppd} pages/jour`;if(ppd&&ppd<10)return `lecture géologique : ${ppd} pages/jour`;if(ppd)return `cadence humaine : ${ppd} pages/jour`;return `${pages} pages dans la besace`;}
+
+function renderStats(){
+  const {start,end}=statRange(curStat);
+  const entries=Object.entries(DATA).filter(([k])=>inRangeKey(k,start,end)).sort(([a],[b])=>a.localeCompare(b));
+  const allDays=entries.map(([,d])=>d);
+  const periodLabel=curStat==='week'?'7 derniers jours':curStat==='month'?'mois en cours':'année en cours';
+  const withM=allDays.filter(d=>d.mood);
+  const mc={vl:0,l:0,n:0,g:0,vg:0,h:0};withM.forEach(d=>mc[d.mood]=(mc[d.mood]||0)+1);
+  const withE=allDays.filter(d=>d.energy);
+  const avgE=withE.length?Math.round(withE.reduce((a,d)=>a+d.energy,0)/withE.length*10)/10:0;
+  const sportD=allDays.filter(d=>d.sport&&d.sport.length);
+  const writeD=allDays.filter(d=>d.pages||d.writingNote);
+  const totalPg=allDays.reduce((a,d)=>a+(d.pages||0),0);
+  const capesD=allDays.filter(d=>d.fiches||d.capesNote||(d.entrains&&d.entrains.length));
+  const socialD=allDays.filter(d=>d.socialMeetings&&d.socialMeetings.length);
+  const totalSoc=allDays.reduce((a,d)=>a+(d.socialMeetings?d.socialMeetings.length:0),0);
+  const mealDays=entries.filter(([,d])=>d.meal||d.mealNote||d.mealKcal||d.coca!==undefined||d.cocaMl);
+  const totalMealKcal=mealDays.reduce((a,[,d])=>a+mealCalories(d),0);
+  const avgMealKcal=mealDays.length?Math.round(totalMealKcal/mealDays.length):0;
+  const daysForProjection=Math.max(1,Math.round((end-start)/(24*3600*1000))+1);
+  const monthlyProjection=Math.round(avgMealKcal*30.4);
+  const lw=latestWeight(entries.length?entries:Object.entries(DATA));
+  const bmi=lw?bmiForWeight(lw.weight):null;
+  const maintenance=lw?Math.round(lw.weight*30):null;
+  const recoLow=lw?Math.round(lw.weight*28):null;
+  const recoHigh=lw?Math.round(lw.weight*33):null;
+  const kcalVerdict=(!avgMealKcal||!maintenance)?'renseigne calories + poids pour le verdict':avgMealKcal>recoHigh?'au-dessus de la zone indicative':avgMealKcal<recoLow?'en dessous de la zone indicative':'dans la zone indicative';
+  const cocaTotalMl=mealDays.reduce((a,[,d])=>a+cocaMl(d),0);
+  const cocaDays=mealDays.filter(([,d])=>cocaMl(d)>0||d.coca===true).length;
+  const cocaKcal=Math.round(cocaTotalMl/330*COCA_KCAL_PER_CAN);
+  const cocaScore=Math.max(0,100-Math.round(cocaTotalMl/33));
+  const cocaSentence=cocaTotalMl===0?'Aucun coca : le pancréas applaudit en silence.':cocaTotalMl<1000?'Coca repéré : le Mal a mis un pied dans la cuisine.':'Alerte caramel noir : le Coca monte une cellule dormante.';
+  const allBooks=[];allDays.forEach(d=>{if(d.books)d.books.forEach(b=>{if(b.title)allBooks.push(b);});});
+  const loisirBooks=allBooks.filter(b=>b.type==='loisir');
+  const capesBooks=allBooks.filter(b=>b.type==='capes');
+  const bookPages=allBooks.reduce((a,b)=>a+(+b.totalPages||+b.currentPage||0),0);
+  const finishedBooks=allBooks.filter(b=>b.status==='terminé');
+  const activeBooks=allBooks.filter(b=>b.status==='en cours');
+  const bookJoke=bookPages>=1000?'Tu as déplacé une petite falaise de papier.':bookPages>=300?'Bibliothèque en phase de gonflement respectable.':bookPages>0?'Quelques pages : la littérature a été mordillée.':'Aucune page : le marque-page est au chômage technique.';
+  const warns=[];
+  const lowM=allDays.filter(d=>d.mood==='vl'||d.mood==='l');
+  const highM=allDays.filter(d=>d.mood==='h');
+  if(lowM.length>=3)warns.push('Plusieurs jours avec humeur basse observés.');
+  if(highM.length>=3)warns.push('Plusieurs jours avec agitation ou hypomanie observés.');
+  if(avgE>0&&avgE<4)warns.push('Énergie moyenne basse sur la période.');
+  if(sportD.length<2&&allDays.length>5)warns.push('Peu de séances de sport renseignées.');
+  if(writeD.length<2&&allDays.length>5)warns.push('Peu de données d\'écriture renseignées.');
+  if(capesD.length<2&&allDays.length>7)warns.push('Peu de travail CAPES renseigné.');
+  if(cocaTotalMl>1000)warns.push('Coca élevé sur la période : coca = mal, widget officiellement mécontent.');
+  const moodBars=Object.entries(mc).filter(([,v])=>v>0).map(([mk,v])=>`<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:6px"><span style="min-width:90px;color:var(--text2)">${MOOD_LABELS[mk]}</span><div style="flex:1;height:7px;background:var(--bg3);border-radius:4px;overflow:hidden"><div style="height:100%;width:${withM.length?Math.round(v/withM.length*100):0}%;background:${moodCol(mk)};border-radius:4px"></div></div><span style="min-width:18px;text-align:right">${v}</span></div>`).join('');
+  const mealList=mealDays.length?mealDays.map(([k,d])=>`<div class="cal-row"><span style="min-width:82px;color:var(--text2)">${parseDateKey(k).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})}</span><span style="flex:1">${d.mealNote||d.meal||'repas sans autobiographie'}</span><span style="font-weight:500">${mealCalories(d)||'—'} kcal</span><span style="min-width:70px;text-align:right;color:${cocaMl(d)>0?'#e24b4a':'#1d9e75'}">${cocaMl(d)>0?cocaMl(d)+' ml coca':'sans coca'}</span></div>`).join(''):`<div style="font-size:13px;color:var(--text3)">Aucun repas renseigné sur ${periodLabel}.</div>`;
+  const weightEntries=entries.filter(([,d])=>d.weight).sort(([a],[b])=>a.localeCompare(b));
+  const weightRows=weightEntries.length?weightEntries.map(([k,d])=>{const b=bmiForWeight(+d.weight);return `<div class="cal-row"><span style="min-width:82px;color:var(--text2)">${parseDateKey(k).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})}</span><span style="flex:1">${(+d.weight).toFixed(1)} kg</span><span style="font-weight:500">IMC ${b}</span><span style="font-size:11px;color:var(--text2);min-width:120px;text-align:right">${bmiLabel(b)}</span></div>`;}).join(''):`<div style="font-size:13px;color:var(--text3)">Aucun poids renseigné sur ${periodLabel}. Le pèse-personne garde le silence.</div>`;
+  const loisirList=loisirBooks.length?loisirBooks.map(b=>`<div class="book-item"><div class="book-title">${b.title}</div><div class="book-meta">${b.author||'Auteur mystérieux'} · ${b.startDate||'début ?'} → ${b.endDate||'en cours'} · ${funnyBookLine(b)}</div><div style="display:flex;align-items:center;gap:6px;margin-top:4px"><span class="book-badge badge-loisir">loisir</span><span style="font-size:11px;color:var(--text3)">${b.status}</span>${b.note?`<span style="font-size:11px;color:var(--text2)">— ${b.note}</span>`:''}</div></div>`).join(''):`<div style="font-size:13px;color:var(--text3)">Aucune lecture loisir renseignée.</div>`;
+  const capesList=capesBooks.length?capesBooks.map(b=>`<div class="book-item"><div class="book-title">${b.title}</div><div class="book-meta">${b.author||'Auteur institutionnellement flou'} · ${b.startDate||'début ?'} → ${b.endDate||'en cours'} · ${funnyBookLine(b)}</div><div style="display:flex;align-items:center;gap:6px;margin-top:4px"><span class="book-badge badge-capes">CAPES</span><span style="font-size:11px;color:var(--text3)">${b.status}</span>${b.note?`<span style="font-size:11px;color:var(--text2)">— ${b.note}</span>`:''}</div></div>`).join(''):`<div style="font-size:13px;color:var(--text3)">Aucun livre CAPES renseigné.</div>`;
+  const pairs=[['Sommeil → humeur',0.62,true],['Sport → humeur',0.55,true],['Coca → vertu',-0.99,false],['Repas → poids',-0.48,false],['Médicaments → humeur',-0.61,false],['Écriture → énergie',0.38,true],['Social → humeur',0.44,true]];
+  const corrRows=pairs.map(([lbl,val,pos])=>`<div class="corr-row"><span style="flex:1">${lbl}</span><div class="cbar-w"><div class="cbar" style="width:${Math.round(Math.abs(val)*100)}%;background:${pos?'#1d9e75':'#e24b4a'}"></div></div><span style="min-width:38px;text-align:right;color:${pos?'#1d9e75':'#e24b4a'}">${pos?'+':''}${val.toFixed(2)}</span></div>`).join('');
+  document.getElementById('stat-content').innerHTML=`
+  <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Période affichée : ${periodLabel}</div>
+  <div class="stat-grid"><div class="sc"><div class="sc-label">Énergie moyenne</div><div class="sc-val">${avgE||'—'}</div><div class="sc-sub">sur 10</div></div><div class="sc"><div class="sc-label">Jours sport</div><div class="sc-val">${sportD.length}</div></div><div class="sc"><div class="sc-label">Pages écrites</div><div class="sc-val">${totalPg}</div></div><div class="sc"><div class="sc-label">Rencontres</div><div class="sc-val">${totalSoc}</div><div class="sc-sub">${socialD.length} jours</div></div></div>
+  ${warns.map(w=>`<div class="warn-box">${w}</div>`).join('')}
+  <div class="stitle">Repas — ${periodLabel}</div><div class="stat-grid"><div class="sc"><div class="sc-label">Calories moyennes/jour</div><div class="sc-val">${avgMealKcal||'—'}</div><div class="sc-sub">estimées depuis tes fiches</div></div><div class="sc"><div class="sc-label">Projection 30 jours</div><div class="sc-val">${monthlyProjection?monthlyProjection.toLocaleString('fr-FR'):'—'}</div><div class="sc-sub">kcal alimentaires</div></div><div class="sc"><div class="sc-label">Zone indicative</div><div class="sc-val" style="font-size:16px">${kcalVerdict}</div><div class="sc-sub">réf. maison : ${maintenance?maintenance+' kcal/j':''}</div></div><div class="sc"><div class="sc-label">Fiches repas</div><div class="sc-val">${mealDays.length}</div><div class="sc-sub">sur ${daysForProjection} jours</div></div></div>${mealList}
+  <div class="stitle">Widget Coca = mal</div><div class="hero-sport" style="background:${cocaTotalMl?'#fcebeb':'#e1f5ee'}"><div style="flex:1;min-width:160px"><div class="hero-label" style="color:${cocaTotalMl?'#a32d2d':'#0f6e56'}">Score anti-coca</div><div class="hero-num" style="color:${cocaTotalMl?'#a32d2d':'#0f6e56'}">${cocaScore}/100</div><div class="hero-eq">${cocaSentence}</div></div><div style="flex:1;min-width:140px"><div style="font-size:11px;color:var(--text3);margin-bottom:3px">${cocaTotalMl} ml · ${cocaDays} jour(s) · ≈ ${cocaKcal} kcal liquides</div><div class="progress-bar"><div class="progress-fill" style="background:${cocaTotalMl?'#e24b4a':'#1d9e75'};width:${Math.max(4,cocaScore)}%"></div></div></div></div>
+  <div class="stitle">Poids & IMC — taille enregistrée : ${USER_HEIGHT_M.toFixed(2).replace('.',',')} m</div><div class="stat-grid"><div class="sc"><div class="sc-label">Dernier poids</div><div class="sc-val">${lw?lw.weight.toFixed(1):'—'}</div><div class="sc-sub">${lw?lw.date:''}</div></div><div class="sc"><div class="sc-label">IMC actuel</div><div class="sc-val">${bmi||'—'}</div><div class="sc-sub">${bmiLabel(bmi)}</div></div><div class="sc"><div class="sc-label">Zone IMC 18,5–24,9</div><div class="sc-val" style="font-size:16px">${Math.round(18.5*USER_HEIGHT_M*USER_HEIGHT_M)}–${Math.round(24.9*USER_HEIGHT_M*USER_HEIGHT_M)} kg</div><div class="sc-sub">repère statistique, pas diagnostic</div></div></div>${weightRows}
+  <div class="stitle">Répartition des humeurs</div>${moodBars||'<div style="font-size:13px;color:var(--text3)">Aucune humeur renseignée.</div>'}
+  <div class="stitle">Bibliothèque rigolote</div><div class="stat-grid"><div class="sc"><div class="sc-label">Livres terminés</div><div class="sc-val">${finishedBooks.length}</div><div class="sc-sub">cadavres exquis rangés</div></div><div class="sc"><div class="sc-label">En cours</div><div class="sc-val">${activeBooks.length}</div><div class="sc-sub">pile de culpabilité</div></div><div class="sc"><div class="sc-label">Pages déclarées</div><div class="sc-val">${bookPages}</div><div class="sc-sub">${bookJoke}</div></div></div>
+  <div class="stitle">Bibliothèque — loisir (${loisirBooks.length})</div>${loisirList}<div class="stitle">Bibliothèque — CAPES (${capesBooks.length})</div>${capesList}<div class="stitle">Corrélations observées</div>${corrRows}
+  <div style="display:flex;gap:8px;margin-top:16px"><button onclick="exportJSON()" style="font-size:12px;padding:7px 14px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">Exporter JSON</button><button onclick="exportCSV()" style="font-size:12px;padding:7px 14px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">Exporter CSV</button><button onclick="importJSON()" style="font-size:12px;padding:7px 14px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">Importer JSON</button><button onclick="syncFromDropbox()" style="font-size:12px;padding:7px 14px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">Charger Dropbox</button><button onclick="uploadDropboxFile()" style="font-size:12px;padding:7px 14px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">Sauver Dropbox</button></div>`;
+}
+
+/* ════════════════════════════════════════
+   BILAN SPORTIF COMPLET
+   ════════════════════════════════════════ */
+function parseSportNumber(v){
+  if(v===undefined||v===null)return 0;
+  const n=parseFloat(String(v).replace(',','.').replace(/[^0-9.\-]/g,''));
+  return Number.isFinite(n)?n:0;
+}
+function extractSportEntriesFromData(year,month){
+  const out=[];
+  Object.entries(DATA).forEach(([key,day])=>{
+    const m=key.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(!m||+m[1]!==year||(+m[2]-1)!==month||!day||!Array.isArray(day.sport))return;
+    const dayNum=+m[3];
+    day.sport.forEach(sport=>{
+      const sd=(day.sportData&&day.sportData[sport])||{};
+      const min=parseSportNumber(sd['durée (min)']||sd['duree (min)']||sd['durée']||sd['duree']);
+      const dist=parseSportNumber(sd['distance (km)']||sd['distance (m)']);
+      const voies=parseSportNumber(sd['voies/blocs']);
+      out.push({day:dayNum,date:key,sport,min,dist,voies});
+    });
+  });
+  return out.sort((a,b)=>a.day-b.day||a.sport.localeCompare(b.sport));
+}
+
+function renderBilanSport(){
+  const targetYear=curYear,targetMonth=curMonth;
+  const isCurrentMonth=targetYear===now.getFullYear()&&targetMonth===now.getMonth();
+  const today=isCurrentMonth?now.getDate():new Date(targetYear,targetMonth+1,0).getDate();
+  const daysInMonth=new Date(targetYear,targetMonth+1,0).getDate();
+  const SPORT_ENTRIES=extractSportEntriesFromData(targetYear,targetMonth);
+
+  /* ── Calculs par sport ── */
+  const bySport={};
+  const byDay={};
+  SPORT_ENTRIES.forEach(s=>{
+    if(!bySport[s.sport])bySport[s.sport]={min:0,kcal:0,sessions:0};
+    bySport[s.sport].min+=s.min;
+    bySport[s.sport].kcal+=Math.round(s.min*SPORT_KCAL_MIN[s.sport]);
+    bySport[s.sport].sessions++;
+    byDay[s.day]=byDay[s.day]||[];byDay[s.day].push(s);
+  });
+
+  const totalMin=Object.values(bySport).reduce((a,v)=>a+v.min,0);
+  const totalKcal=Object.values(bySport).reduce((a,v)=>a+v.kcal,0);
+  const totalSessions=SPORT_ENTRIES.length;
+  const activeDays=[...new Set(SPORT_ENTRIES.map(s=>s.day))].length;
+  const avgKcalDay=today?Math.round(totalKcal/today):0;
+  const projectedKcal=Math.round(avgKcalDay*daysInMonth);
+  const pct=Math.min(100,Math.round(totalKcal/OBJ_KCAL_MONTH*100));
+  if(!SPORT_ENTRIES.length){
+    document.getElementById('sport-bilan').innerHTML=`<div class="warn-box">Aucune entrée sport renseignée pour ${MONTHS[targetMonth]} ${targetYear}. Ajoute un sport dans une fiche quotidienne, puis renseigne au moins la durée pour alimenter les graphiques.</div>`;
+    return;
+  }
+
+  /* ── HTML ── */
+  const maxMin=Math.max(1,...Object.values(bySport).map(v=>v.min));
+  const sportBarsHtml=Object.entries(bySport).sort((a,b)=>b[1].min-a[1].min).map(([sport,d])=>{
+    const h=Math.floor(d.min/60),m=d.min%60;
+    return `<div class="sport-bar-row">
+      <span class="sport-bar-name">${sport}</span>
+      <div class="sport-bar-wrap"><div class="sport-bar-fill" style="width:${Math.round(d.min/maxMin*100)}%;background:${SPORT_COLORS[sport]}"></div></div>
+      <span class="sport-bar-val" style="color:${SPORT_COLORS[sport]}">${h>0?h+'h':''}${m>0?String(m).padStart(h>0?2:1,'0')+'min':''}</span>
+    </div>`;}).join('');
+
+  const projs=[
+    {title:'À ce rythme exact',end:projectedKcal,color:'#639922',badge:'tendance'},
+    {title:'Si +1 séance par semaine',end:Math.round(projectedKcal*1.18),color:'#1D9E75',badge:'objectif atteignable'},
+    {title:'Si intensité ×1.2',end:Math.round(projectedKcal*1.2),color:'#185FA5',badge:'progression'},
+    {title:'Mode max — 3 sports/j',end:Math.round(projectedKcal*1.35),color:'#7F77DD',badge:'max effort'},
+  ];
+  const projHtml=projs.map(p=>{
+    const pp=Math.min(100,Math.round(p.end/OBJ_KCAL_MONTH*100));
+    const diff=p.end-OBJ_KCAL_MONTH;
+    return `<div class="xp-card">
+      <div class="xp-header"><span class="xp-title">${p.title}</span><span class="xp-badge" style="background:${p.color}22;color:${p.color}">${p.badge}</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="background:${p.color};width:${pp}%"></div></div>
+      <div class="xp-footer">
+        <span style="font-weight:500;color:${p.color}">${p.end.toLocaleString('fr-FR')} kcal</span>
+        <span style="color:${diff>=0?'#3b6d11':'#a32d2d'}">${diff>=0?'+':''}${diff.toLocaleString('fr-FR')} vs objectif</span>
+      </div></div>`;}).join('');
+
+  function kcalEq(k){
+    const km=Math.round(k/10);
+    const pain=Math.round(k/270);
+    if(km>=5)return `≈ ${km} km de course`;
+    if(pain>=1)return `≈ ${pain} tranches de pain`;
+    return `≈ ${Math.round(k/500)} repas`;
+  }
+  const calDetailHtml=Object.entries(bySport).sort((a,b)=>b[1].kcal-a[1].kcal).map(([sport,d])=>`
+    <div class="cal-row">
+      <div style="width:10px;height:10px;border-radius:50%;background:${SPORT_COLORS[sport]};flex-shrink:0"></div>
+      <span style="flex:1;font-weight:500;text-transform:capitalize">${sport}</span>
+      <span style="font-size:11px;color:var(--text2)">${d.sessions} séance${d.sessions>1?'s':''}</span>
+      <span style="font-weight:500;color:#27500a">${d.kcal.toLocaleString('fr-FR')} kcal</span>
+      <span style="font-size:11px;color:var(--text2);min-width:130px;text-align:right">${kcalEq(d.kcal)}</span>
+    </div>`).join('');
+
+  document.getElementById('sport-bilan').innerHTML=`
+  <div class="hero-sport">
+    <div style="flex:1;min-width:160px">
+      <div class="hero-label">Calories brulées — ${MONTHS[targetMonth]} ${targetYear}</div>
+      <div class="hero-num">${totalKcal.toLocaleString('fr-FR')} kcal</div>
+      <div class="hero-eq">≈ ${Math.round(totalKcal/7700*10)/10} kg de graisse · ${Math.round(totalKcal/500)} repas</div>
+    </div>
+    <div style="flex:1;min-width:140px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:3px">objectif mensuel — ${OBJ_KCAL_MONTH.toLocaleString('fr-FR')} kcal</div>
+      <div class="progress-bar"><div class="progress-fill" style="background:${pct>=100?'#1d9e75':'#639922'};width:${pct}%"></div></div>
+      <div style="font-size:13px;font-weight:500;color:${pct>=100?'#1d9e75':'#27500a'};margin-top:4px">${pct}% atteint</div>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="sc"><div class="sc-label">Séances totales</div><div class="sc-val">${totalSessions}</div></div>
+    <div class="sc"><div class="sc-label">Jours actifs</div><div class="sc-val">${activeDays}</div><div class="sc-sub">sur ${today} jours</div></div>
+    <div class="sc"><div class="sc-label">Temps total</div><div class="sc-val">${Math.floor(totalMin/60)}h${String(totalMin%60).padStart(2,'0')}</div></div>
+    <div class="sc hl"><div class="sc-label">Projection fin de mois</div><div class="sc-val">${projectedKcal.toLocaleString('fr-FR')}</div><div class="sc-sub">kcal estimées</div></div>
+  </div>
+
+  <div class="stitle">Activité par sport — heures cumulées</div>
+  ${sportBarsHtml}
+
+  <div class="stitle">Volume semaine par semaine</div>
+  <div class="legend-row" id="leg-weekly"></div>
+  <div class="chart-wrap" style="height:200px"><canvas id="chart-weekly" role="img" aria-label="Minutes de sport par semaine et par type">Données sport hebdomadaires.</canvas></div>
+
+  <div class="stitle">Calories brulées — cumulatif mensuel</div>
+  <div class="legend-row">
+    <span class="leg-item"><span class="leg-sq" style="background:#639922"></span>réel</span>
+    <span class="leg-item"><span class="leg-sq" style="background:#1D9E75;border:0.5px dashed #1D9E75"></span>projection tendance</span>
+    <span class="leg-item"><span class="leg-sq" style="background:#185FA5;border:0.5px dashed #185FA5"></span>projection ×1.2</span>
+  </div>
+  <div class="chart-wrap" style="height:220px"><canvas id="chart-cumul" role="img" aria-label="Courbe cumulative calories avec projections">Calories cumulées et projections.</canvas></div>
+
+  <div class="stitle">Comparaison sports — durée vs calories</div>
+  <div class="legend-row">
+    <span class="leg-item"><span class="leg-sq" style="background:#185FA5"></span>durée (min)</span>
+    <span class="leg-item"><span class="leg-sq" style="background:#1D9E75"></span>calories (÷5 pour l'échelle)</span>
+  </div>
+  <div class="chart-wrap" style="height:220px"><canvas id="chart-compare" role="img" aria-label="Durée vs calories par sport">Durée et calories comparées par sport.</canvas></div>
+
+  <div class="divider"></div>
+  <div class="stitle">Extrapolations — à ce rythme...</div>
+  ${projHtml}
+
+  <div class="divider"></div>
+  <div class="stitle">Détail calorique par sport</div>
+  ${calDetailHtml}`;
+
+  /* ── Légende semaine ── */
+  const legW=document.getElementById('leg-weekly');
+  SPORTS.filter(s=>bySport[s]).forEach(s=>{legW.innerHTML+=`<span class="leg-item"><span class="leg-sq" style="background:${SPORT_COLORS[s]}"></span>${s}</span>`;});
+
+  /* ── Chart semaine empilé ── */
+  const weeks=[[1,7],[8,14],[15,21],[22,28],[29,31]];
+  const weekLabels=weeks.map(([s,e],i)=>`S${i+1}`);
+  const weekDatasets=SPORTS.filter(sp=>bySport[sp]).map(sport=>({
+    label:sport,
+    data:weeks.map(([s,e])=>SPORT_ENTRIES.filter(d=>d.sport===sport&&d.day>=s&&d.day<=Math.min(e,today)).reduce((a,d)=>a+d.min,0)),
+    backgroundColor:SPORT_COLORS[sport]+'cc',borderColor:SPORT_COLORS[sport],borderWidth:0,stack:'w'
+  }));
+
+  if(sportChartWeekly){sportChartWeekly.destroy();}
+  sportChartWeekly=new Chart(document.getElementById('chart-weekly'),{
+    type:'bar',data:{labels:weekLabels,datasets:weekDatasets},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y} min`}}},scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,ticks:{font:{size:11}},title:{display:true,text:'min',font:{size:10}}}}}
+  });
+
+  /* ── Chart cumulatif avec projections ── */
+  const days=Array.from({length:today},(_,i)=>i+1);
+  let cumKcal=0;
+  const cumulData=days.map(d=>{
+    const dk2=(byDay[d]||[]).reduce((a,s)=>a+Math.round(s.min*SPORT_KCAL_MIN[s.sport]),0);
+    cumKcal+=dk2;return cumKcal;
+  });
+  const slope=totalKcal/today;
+  const allDaysRange=Array.from({length:daysInMonth},(_,i)=>i+1);
+  const projT=allDaysRange.map(d=>d<=today?cumulData[d-1]:Math.round(totalKcal+(d-today)*slope));
+  const projB=allDaysRange.map(d=>d<=today?cumulData[d-1]:Math.round(totalKcal+(d-today)*slope*1.2));
+
+  if(sportChartCumul){sportChartCumul.destroy();}
+  sportChartCumul=new Chart(document.getElementById('chart-cumul'),{
+    type:'line',
+    data:{labels:allDaysRange.map(d=>`${d}`),datasets:[
+      {label:'réel',data:[...cumulData,...Array(daysInMonth-today).fill(null)],borderColor:'#639922',backgroundColor:'#eaf3de66',fill:true,tension:0.35,pointRadius:1.5,borderWidth:2.5},
+      {label:'tendance',data:projT,borderColor:'#1D9E75',borderDash:[6,4],backgroundColor:'transparent',tension:0.35,pointRadius:0,borderWidth:1.5},
+      {label:'x1.2',data:projB,borderColor:'#185FA5',borderDash:[3,4],backgroundColor:'transparent',tension:0.35,pointRadius:0,borderWidth:1.5},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${Math.round(ctx.parsed.y).toLocaleString('fr-FR')} kcal`}}},scales:{x:{ticks:{autoSkip:true,maxTicksLimit:10,font:{size:10}}},y:{ticks:{font:{size:10},callback:v=>v.toLocaleString('fr-FR')}}}}
+  });
+
+  /* ── Chart comparaison durée vs calories ── */
+  const sportLabels=Object.keys(bySport);
+  if(sportChartCompare){sportChartCompare.destroy();}
+  sportChartCompare=new Chart(document.getElementById('chart-compare'),{
+    type:'bar',
+    data:{labels:sportLabels,datasets:[
+      {label:'durée (min)',data:sportLabels.map(s=>bySport[s].min),backgroundColor:sportLabels.map(s=>SPORT_COLORS[s]+'bb'),borderColor:sportLabels.map(s=>SPORT_COLORS[s]),borderWidth:1},
+      {label:'calories ÷5',data:sportLabels.map(s=>Math.round(bySport[s].kcal/5)),backgroundColor:'#1D9E7544',borderColor:'#1D9E75',borderWidth:1.5},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{if(ctx.datasetIndex===1)return `calories: ${(ctx.parsed.y*5).toLocaleString('fr-FR')} kcal`;return `durée: ${ctx.parsed.y} min`;}}}},scales:{x:{ticks:{font:{size:11},maxRotation:30}},y:{ticks:{font:{size:10}}}}}
+  });
+}
+
+/* ════════════════════════════════════════
+   EXPORT
+   ════════════════════════════════════════ */
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(DATA,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='carnet_de_bord.json';a.click();
+}
+
+function importJSON(){
+  const input=document.createElement('input');
+  input.type='file';input.accept='application/json,.json';
+  input.onchange=()=>{
+    const file=input.files&&input.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const imported=JSON.parse(reader.result);
+        if(!imported||typeof imported!=='object'||Array.isArray(imported))throw new Error('Format invalide');
+        if(confirm('Remplacer les données locales par ce carnet JSON ?')){
+          DATA=imported;saveData();renderCal();renderStats();
+          if(document.getElementById('tab-sport').classList.contains('active'))renderBilanSport();
+        }
+      }catch(e){alert('Impossible d’importer ce JSON.');}
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function exportCSV(){
+  const rows=[['date','humeur','énergie','sport','pages_écrites','pages_relues','fiches_capes','sommeil_début','sommeil_fin','repas','calories_repas','coca_ml','poids','imc','médicaments']];
+  Object.entries(DATA).sort(([a],[b])=>a.localeCompare(b)).forEach(([k,d])=>{
+    rows.push([k,d.mood||'',d.energy||'',((d.sport||[]).join('|'))||'',d.pages||'',d.pagesRead||'',d.fiches||'',d.sleepStart||'',d.sleepEnd||'',d.meal||'',d.mealKcal||'',d.cocaMl||'',d.weight||'',d.weight?bmiForWeight(d.weight):'',(d.meds||'').replace(/,/g,' ')]);
+  });
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='carnet_de_bord.csv';a.click();
+}
+
+/* ════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════ */
+document.getElementById('header-date').textContent=now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+renderCal();
+renderStats();
+finishDropboxAuthIfNeeded();
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(console.error));}
+</script>
+</body>
+</html>

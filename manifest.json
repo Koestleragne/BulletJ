@@ -1,0 +1,23 @@
+{
+  "name": "Carnet de bord",
+  "short_name": "Carnet",
+  "description": "Bullet journal personnel installable avec synchronisation Google Drive.",
+  "start_url": "./bullet_journal_v6_dropbox.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fafaf8",
+  "theme_color": "#fafaf8",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
