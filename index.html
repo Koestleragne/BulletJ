@@ -329,10 +329,16 @@ const SPORT_FIELDS={
 };
 const MUSCU_EXOS=['Pompes','Abdos','Squat','Superman','Abdos côté','Planche (sec)','Fentes'];
 const FIXED_TODOS=[
-  {key:'menage',label:'Ménage'},{key:'cuisine',label:'Cuisine'},
-  {key:'rangement',label:'Rangement'},{key:'vaisselle',label:'Vaisselle'},
+  {key:'menage',label:'Ménage'},
+  {key:'cuisine',label:'Cuisine'},
+  {key:'rangement',label:'Rangement'},
+  {key:'vaisselle',label:'Vaisselle'},
+  {key:'lessive',label:'Lessive'},
+  {key:'poubelle',label:'Poubelle'},
+  {key:'draps',label:'Draps'},
   {key:'commentaire',label:'Commentaire'}
 ];
+
 const TRAVAIL_TODOS=[
   {key:'copies',label:'Copies'},{key:'cours',label:'Cours'},
   {key:'preparation',label:'Préparation'},{key:'admin',label:'Admin'}
@@ -350,9 +356,12 @@ const CAPES_LABELS=[
   'Méthode Commentaire'
 ];
 const CAPES_BADGE_CLASSES={
-  'Histoire Romaine':'badge-hist-rom','Histoire Papale':'badge-hist-pap',
-  'Histoire Coloniale':'badge-hist-col','Géographie Pacifique':'badge-geo-pac',
-  'Géographie Littorale':'badge-geo-lit','Géographie Environnement':'badge-geo-env'
+  'Histoire Romaine':'badge-hist-rom',
+  'Histoire Christianisme':'badge-hist-pap',
+  'Histoire Coloniale':'badge-hist-col',
+  'Géographie Pacifique':'badge-geo-pac',
+  'Géographie Littoral':'badge-geo-lit',
+  'Géographie Environnement':'badge-geo-env'
 };
 const OBJ_KCAL_MONTH=7000;
 const USER_HEIGHT_M=1.87;
@@ -475,7 +484,14 @@ function renderQualityStars(n,k){
   }
   return s;
 }
-function setQuality(k,v){initDay(k).quality=v;const el=document.getElementById('quality-stars-'+k);if(el)el.innerHTML=renderQualityStars(v,k);if(document.getElementById('quality-lbl-'+k))document.getElementById('quality-lbl-'+k).textContent=qualityLabel(v);}
+function setQuality(k,v){
+  initDay(k).quality=v;
+  const el=document.getElementById('quality-stars-'+k);
+  if(el)el.innerHTML=renderQualityStars(v,k);
+  if(document.getElementById('quality-lbl-'+k))document.getElementById('quality-lbl-'+k).textContent=qualityLabel(v);
+  saveData();
+  renderCal();
+}
 function qualityLabel(n){return ['','Difficile','Ordinaire','Correct','Bonne journée','Excellente'][n||0]||'';}
 
 /* ── Streaks ── */
@@ -732,7 +748,7 @@ function secCapes(d,k){
   <div class="sec-body">
     ${buildCapesFichesSection(d,k)}
     <div class="fl"><div class="lbl">Entraînements</div><div class="chips">${eChips}</div></div>
-    ${buildCapesBooksSection(d,k)}
+    ${buildCapesLibraryTabs(d,k)}
     <div class="fl"><div class="lbl">Notes de méthode</div><textarea id="cn-${k}" placeholder="Ce que tu as travaillé...">${d.capesNote||''}</textarea></div>
   </div></div>`;
 }
@@ -812,6 +828,74 @@ function updCapesFiche(k,input){
       <div class="fl"><div class="lbl">Note</div><input type="text" value="${b.note||''}" placeholder="facultatif" data-ci="${i}" data-cf="note" oninput="updCapesBook('${k}',this)"></div>
     </div>`).join('');
   return `<div class="fl"><div class="lbl">Livres CAPES</div>${rows}<button class="add-btn" onclick="addCapesBook('${k}')">+ Ajouter un livre</button></div>`;
+}
+  function buildCapesLibraryTabs(d,k){
+  const active=d._capesLibTab||'books';
+  return `<div class="fl">
+    <div class="lbl">Bibliographie CAPES</div>
+    <div class="sec-tabs">
+      <button class="sec-tab${active==='books'?' active':''}" onclick="switchCapesLibTab('${k}','books',this)">Livres</button>
+      <button class="sec-tab${active==='articles'?' active':''}" onclick="switchCapesLibTab('${k}','articles',this)">Articles</button>
+    </div>
+    <div id="capes-books-${k}" style="display:${active==='books'?'block':'none'}">${buildCapesBooksSection(d,k)}</div>
+    <div id="capes-articles-${k}" style="display:${active==='articles'?'block':'none'}">${buildCapesArticlesSection(d,k)}</div>
+  </div>`;
+}
+
+function switchCapesLibTab(k,tab,btn){
+  initDay(k)._capesLibTab=tab;
+  btn.closest('.sec-tabs').querySelectorAll('.sec-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('capes-books-'+k).style.display=tab==='books'?'block':'none';
+  document.getElementById('capes-articles-'+k).style.display=tab==='articles'?'block':'none';
+}
+
+function buildCapesArticlesSection(d,k){
+  const articles=d.capesArticlesList||[];
+  const rows=articles.map((a,i)=>`
+    <div class="add-item">
+      <div class="add-item-header"><span style="font-size:12px;font-weight:500">${a.title||'Article CAPES'}</span><button class="rm-btn" onclick="removeCapesArticle('${k}',${i})">×</button></div>
+      <div class="fl"><div class="lbl">Titre</div><input type="text" value="${a.title||''}" data-ai="${i}" data-af="title" oninput="updCapesArticle('${k}',this)"></div>
+      <div class="fl"><div class="lbl">Auteur</div><input type="text" value="${a.author||''}" data-ai="${i}" data-af="author" oninput="updCapesArticle('${k}',this)"></div>
+      <div class="two">
+        <div class="fl"><div class="lbl">Label</div><select data-ai="${i}" data-af="label" onchange="updCapesArticle('${k}',this)">
+          <option value="">—</option>
+          ${CAPES_LABELS.map(l=>`<option value="${l}"${a.label===l?' selected':''}>${l}</option>`).join('')}
+        </select></div>
+        <div class="fl"><div class="lbl">Statut</div><select data-ai="${i}" data-af="status" onchange="updCapesArticle('${k}',this)">
+          <option value="à lire"${a.status==='à lire'?' selected':''}>À lire</option>
+          <option value="en cours"${a.status==='en cours'?' selected':''}>En cours</option>
+          <option value="terminé"${a.status==='terminé'?' selected':''}>Terminé</option>
+        </select></div>
+      </div>
+      <div class="fl"><div class="lbl">Revue / source</div><input type="text" value="${a.source||''}" placeholder="facultatif" data-ai="${i}" data-af="source" oninput="updCapesArticle('${k}',this)"></div>
+      <div class="fl"><div class="lbl">Note</div><input type="text" value="${a.note||''}" placeholder="facultatif" data-ai="${i}" data-af="note" oninput="updCapesArticle('${k}',this)"></div>
+    </div>`).join('');
+
+  return `<div class="fl">${rows}<button class="add-btn" onclick="addCapesArticle('${k}')">+ Ajouter un article</button></div>`;
+}
+
+function addCapesArticle(k){
+  const day=initDay(k);
+  day.capesArticlesList=day.capesArticlesList||[];
+  day.capesArticlesList.push({title:'',author:'',label:'',status:'en cours',source:'',note:''});
+  rebuildSheet(k);
+}
+
+function removeCapesArticle(k,i){
+  initDay(k).capesArticlesList.splice(i,1);
+  rebuildSheet(k);
+}
+
+function updCapesArticle(k,input){
+  const day=initDay(k);
+  const i=+input.dataset.ai;
+  const f=input.dataset.af;
+  day.capesArticlesList=day.capesArticlesList||[];
+  day.capesArticlesList[i]=day.capesArticlesList[i]||{};
+  day.capesArticlesList[i][f]=input.tagName==='SELECT'
+    ? input.options[input.selectedIndex].value
+    : input.value;
 }
 function addCapesBook(k){const day=initDay(k);day.capesBooksList=day.capesBooksList||[];day.capesBooksList.push({title:'',author:'',label:'',status:'en cours',note:''});rebuildSheet(k);}
 function removeCapesBook(k,i){initDay(k).capesBooksList.splice(i,1);rebuildSheet(k);}
@@ -920,7 +1004,6 @@ function collectSheet(k){
   const set=(id,field,parse)=>{const el=g(id);if(el&&el.value!=='')day[field]=parse?parse(el.value):el.value;};
   set('mn-','mentalNote');set('jn-','journal');set('cn-','capesNote');
   set('ev-k-','event');set('act-','activity');set('travailNote-','travailNote');
-  set('fi-','fiches',v=>+v||0);
   set('med-name-','medName');set('med-dose-','medDose');set('med-time-','medTime');
   /* écriture */
   const ec=day.ecriture=day.ecriture||{roman:{},poesie:{}};
@@ -1080,8 +1163,22 @@ entries.forEach(([k,d])=>{
     });
   }
 });
+const allCapesArticles=[];
+allDays.forEach(d=>{
+  if(d.capesArticlesList){
+    d.capesArticlesList.forEach(a=>{
+      if(a.title)allCapesArticles.push({...a,_type:'article'});
+    });
+  }
+});
 const totalFiches=allFiches.length;
-  const capesD=allDays.filter(d=>d.fiches||d.capesNote||(d.entrains&&d.entrains.length));
+  const capesD=allDays.filter(d=>
+  (d.capesFichesList&&d.capesFichesList.length) ||
+  d.capesNote ||
+  (d.entrains&&d.entrains.length) ||
+  (d.capesBooksList&&d.capesBooksList.length) ||
+  (d.capesArticlesList&&d.capesArticlesList.length)
+);
   /* projets */
   const projects=getProjects();
   const activeProj=projects.filter(p=>!p.closed);
@@ -1124,6 +1221,45 @@ const totalFiches=allFiches.length;
 
   /* graphique gestion du temps — canvas */
   const timeId='chart-time-'+Date.now();
+  const capesFichesLabelCounts={};
+allFiches.forEach(f=>{
+  const label=f.label||'Sans label';
+  capesFichesLabelCounts[label]=(capesFichesLabelCounts[label]||0)+1;
+});
+
+const capesFichesByDate={};
+allFiches.forEach(f=>{
+  capesFichesByDate[f.date]=(capesFichesByDate[f.date]||0)+1;
+});
+
+const bookLabelCounts={};
+allCapesBooks.forEach(b=>{
+  const label=b.label||'Sans label';
+  bookLabelCounts[label]=(bookLabelCounts[label]||0)+1;
+});
+
+const bookStatusCounts={};
+allCapesBooks.forEach(b=>{
+  const status=b.status||'Sans statut';
+  bookStatusCounts[status]=(bookStatusCounts[status]||0)+1;
+});
+const articleLabelCounts={};
+allCapesArticles.forEach(a=>{
+  const label=a.label||'Sans label';
+  articleLabelCounts[label]=(articleLabelCounts[label]||0)+1;
+});
+
+const articleStatusCounts={};
+allCapesArticles.forEach(a=>{
+  const status=a.status||'Sans statut';
+  articleStatusCounts[status]=(articleStatusCounts[status]||0)+1;
+});
+const chartFichesRepId='chart-fiches-rep-'+Date.now();
+const chartFichesProdId='chart-fiches-prod-'+Date.now();
+const chartBooksRepId='chart-books-rep-'+Date.now();
+const chartBooksStatusId='chart-books-status-'+Date.now();
+const chartArticlesRepId='chart-articles-rep-'+Date.now();
+const chartArticlesStatusId='chart-articles-status-'+Date.now();
 
   document.getElementById('stat-content').innerHTML=`
   <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Période : ${label} · ${allDays.length} jour${allDays.length!==1?'s':''} renseigné${allDays.length!==1?'s':''}</div>
@@ -1188,7 +1324,57 @@ const totalFiches=allFiches.length;
     </div>
   `).join(''):'<div style="font-size:13px;color:var(--text3)">Aucune fiche CAPES renseignée.</div>'}
   <div class="stitle">Bibliothèque — loisir (${loisirBooks.length})</div>${loisirList}
+    <div class="stitle">Graphiques CAPES <span class="stitle-badge">fiches & livres</span></div>
+
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px">
+    <canvas id="${chartFichesRepId}" role="img" aria-label="Répartition des fiches CAPES par label">
+      Répartition des fiches CAPES par label.
+    </canvas>
+  </div>
+
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px">
+    <canvas id="${chartFichesProdId}" role="img" aria-label="Production des fiches CAPES par date">
+      Production des fiches CAPES par date.
+    </canvas>
+  </div>
+
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px">
+    <canvas id="${chartBooksRepId}" role="img" aria-label="Répartition des livres CAPES par label">
+      Répartition des livres CAPES par label.
+    </canvas>
+  </div>
+
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px">
+    <canvas id="${chartBooksStatusId}" role="img" aria-label="Statut des livres CAPES">
+      Statut des livres CAPES.
+    </canvas>
+  </div>
+    <div class="chart-wrap" style="height:220px;margin-bottom:12px">
+    <canvas id="${chartArticlesRepId}" role="img" aria-label="Répartition des articles CAPES par label">
+      Répartition des articles CAPES par label.
+    </canvas>
+  </div>
+
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px">
+    <canvas id="${chartArticlesStatusId}" role="img" aria-label="Statut des articles CAPES">
+      Statut des articles CAPES.
+    </canvas>
+  </div>
   <div class="stitle">Bibliothèque — CAPES (${allCapesBooks.length})</div>${capesList}
+
+<div class="stitle">Articles — CAPES (${allCapesArticles.length})</div>
+${allCapesArticles.length ? allCapesArticles.map(a=>`
+  <div class="book-item">
+    <div class="book-title">${a.title}</div>
+    <div class="book-meta">${a.author||'—'}${a.source?' · '+a.source:''}</div>
+    <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:3px">
+      <span class="book-badge badge-capes">article</span>
+      ${a.label?`<span class="book-badge ${CAPES_BADGE_CLASSES[a.label]||'badge-capes'}">${a.label}</span>`:''}
+      <span style="font-size:11px;color:var(--text3)">${a.status}</span>
+      ${a.note?`<span style="font-size:11px;color:var(--text2)">— ${a.note}</span>`:''}
+    </div>
+  </div>
+`).join('') : '<div style="font-size:13px;color:var(--text3)">Aucun article CAPES renseigné.</div>'}
   <div class="stitle">Corrélations observées</div>${corrRows}
 
   <div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap">
@@ -1208,8 +1394,142 @@ const totalFiches=allFiches.length;
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:10}},tooltip:{callbacks:{label:ctx=>{const min=ctx.parsed;const h=Math.floor(min/60);const m=min%60;return `${ctx.label}: ${h>0?h+'h':''}${m}min`;}}}}}
     });
   }
+
+  const fichesRepCanvas=document.getElementById(chartFichesRepId);
+if(fichesRepCanvas && Object.keys(capesFichesLabelCounts).length){
+  new Chart(fichesRepCanvas,{
+    type:'doughnut',
+    data:{
+      labels:Object.keys(capesFichesLabelCounts),
+      datasets:[{
+        data:Object.values(capesFichesLabelCounts),
+        borderWidth:0
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'right',labels:{font:{size:11},boxWidth:10}}
+      }
+    }
+  });
 }
 
+const fichesProdCanvas=document.getElementById(chartFichesProdId);
+if(fichesProdCanvas && Object.keys(capesFichesByDate).length){
+  const labels=Object.keys(capesFichesByDate).sort();
+  new Chart(fichesProdCanvas,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        label:'Fiches',
+        data:labels.map(k=>capesFichesByDate[k]),
+        borderWidth:0
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{font:{size:10},maxRotation:45}},
+        y:{ticks:{font:{size:10},precision:0}}
+      }
+    }
+  });
+}
+
+const booksRepCanvas=document.getElementById(chartBooksRepId);
+if(booksRepCanvas && Object.keys(bookLabelCounts).length){
+  new Chart(booksRepCanvas,{
+    type:'doughnut',
+    data:{
+      labels:Object.keys(bookLabelCounts),
+      datasets:[{
+        data:Object.values(bookLabelCounts),
+        borderWidth:0
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'right',labels:{font:{size:11},boxWidth:10}}
+      }
+    }
+  });
+}
+
+const booksStatusCanvas=document.getElementById(chartBooksStatusId);
+if(booksStatusCanvas && Object.keys(bookStatusCounts).length){
+  new Chart(booksStatusCanvas,{
+    type:'bar',
+    data:{
+      labels:Object.keys(bookStatusCounts),
+      datasets:[{
+        label:'Livres',
+        data:Object.values(bookStatusCounts),
+        borderWidth:0
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{font:{size:10}}},
+        y:{ticks:{font:{size:10},precision:0}}
+      }
+    }
+  });
+}
+
+const articlesRepCanvas=document.getElementById(chartArticlesRepId);
+if(articlesRepCanvas && Object.keys(articleLabelCounts).length){
+  new Chart(articlesRepCanvas,{
+    type:'doughnut',
+    data:{
+      labels:Object.keys(articleLabelCounts),
+      datasets:[{
+        data:Object.values(articleLabelCounts),
+        borderWidth:0
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'right',labels:{font:{size:11},boxWidth:10}}
+      }
+    }
+  });
+}
+
+const articlesStatusCanvas=document.getElementById(chartArticlesStatusId);
+if(articlesStatusCanvas && Object.keys(articleStatusCounts).length){
+  new Chart(articlesStatusCanvas,{
+    type:'bar',
+    data:{
+      labels:Object.keys(articleStatusCounts),
+      datasets:[{
+        label:'Articles',
+        data:Object.values(articleStatusCounts),
+        borderWidth:0
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{font:{size:10}}},
+        y:{ticks:{font:{size:10},precision:0}}
+      }
+    }
+  });
+}
 /* ════════════════════════════════════════════════
    BILAN SPORT (repris de v6 avec extraction depuis DATA)
    ════════════════════════════════════════════════ */
@@ -1420,7 +1740,13 @@ function deleteDeadline(id){
   renderDeadlinesBanner();
   renderCal();
 }
+
 document.getElementById('header-date').textContent=now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+renderCal();
+renderStats('week');
+renderDeadlinesBanner();
+
 finishDropboxAuthIfNeeded().then(()=>{
   if(dropboxTokenValid()){
     syncFromDropbox();
