@@ -1340,11 +1340,17 @@ function deleteDeadline(id){
   renderCal();
 }
 document.getElementById('header-date').textContent=now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-renderCal();
-renderStats('week');
-renderDeadlinesBanner();
-finishDropboxAuthIfNeeded();
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));}
+finishDropboxAuthIfNeeded().then(()=>{
+  if(dropboxTokenValid()){
+    syncFromDropbox();
+  }
+});
+
+setInterval(()=>{
+  if(dropboxTokenValid()){
+    syncFromDropbox();
+  }
+}, 10000);
 </script>
 </body>
 </html>
