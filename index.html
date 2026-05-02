@@ -375,7 +375,9 @@ const COCA_KCAL_PER_CAN=140;
    ════════════════════════════════════════════════ */
 const now=new Date();
 let curYear=now.getFullYear(),curMonth=now.getMonth(),selKey=null,curStat='week';
-let sportChartWeekly=null,sportChartCumul=null,sportChartCompare=null,timeChart=null;
+let sportChartWeekly=null,sportChartCumul=null,sportChartCompare=null,timeChart=null,healthChart=null;
+let healthRangeDays='30';
+let healthVisible={sleep:true,mood:true,med:true,stressT:true,stressS:true,energy:true,sport:true};
 
 /* ── Dropbox ── */
 const DROPBOX_APP_KEY='mimjsae5tdcsijp';
@@ -687,6 +689,7 @@ function secSport(d,k){
     </div>
     <div class="fl"><div class="lbl">Hygiène repas</div>
       <div class="color-row">${[['#639922','vert','Très bon'],['#f0c040','jaune','Correct'],['#ef9f27','orange','Moyen'],['#e24b4a','rouge','Mauvais'],['#2c2c2a','noir','Aucun'],['#b4b2a9','gris','N/R']].map(([c,l,t])=>`<div class="cdot${d.meal===l?' sel':''}" style="background:${c}" title="${t}" onclick="setMeal('${k}','${l}',this)"></div>`).join('')}</div></div>
+    <div class="fl"><div class="lbl">Ce que j’ai mangé</div><textarea id="meal-desc-${k}" placeholder="Repas, grignotages, quantités approximatives, contexte..." oninput="initDay('${k}').mealDesc=this.value">${d.mealDesc||''}</textarea></div>
     <div class="fl"><div class="lbl">Coca (ml)</div><div class="mood-btns">
       <button class="mb${!d.cocaMl&&d.coca===false?' sel-ok':''}" onclick="initDay('${k}').cocaMl=0;initDay('${k}').coca=false;this.closest('.mood-btns').querySelectorAll('.mb').forEach(b=>b.className='mb');this.className='mb sel-ok'">Non</button>
       ${[150,330,500,1000].map(ml=>`<button class="mb${d.cocaMl===ml?' sel-ok':''}" onclick="initDay('${k}').cocaMl=${ml};initDay('${k}').coca=true;this.closest('.mood-btns').querySelectorAll('.mb').forEach(b=>b.className='mb');this.className='mb sel-ok'">${ml}ml</button>`).join('')}
@@ -757,23 +760,26 @@ function buildCapesFichesSection(d,k){
   const rows=fiches.map((f,i)=>`
     <div class="add-item">
       <div class="add-item-header">
-        <span style="font-size:12px;font-weight:500">${f.title||'Fiche CAPES'}</span>
-        <button class="rm-btn" onclick="removeCapesFiche('${k}',${i})">×</button>
+        <span style="font-size:12px;font-weight:500">${f.locked?'🔒 ':''}${f.title||'Fiche CAPES'}</span>
+        <div>
+          <button class="rm-btn" onclick="toggleCapesFicheLock('${k}',${i})" title="${f.locked?'Déverrouiller':'Verrouiller'}">${f.locked?'🔓':'🔒'}</button>
+          <button class="rm-btn" onclick="removeCapesFiche('${k}',${i})">×</button>
+        </div>
       </div>
       <div class="fl">
         <div class="lbl">Titre de la fiche</div>
-        <input type="text" value="${f.title||''}" data-fi="${i}" data-ff="title" oninput="updCapesFiche('${k}',this)">
+        <input type="text" value="${f.title||''}" data-fi="${i}" data-ff="title" oninput="updCapesFiche('${k}',this)" ${f.locked?'disabled':''}>
       </div>
       <div class="fl">
         <div class="lbl">Label</div>
-        <select data-fi="${i}" data-ff="label" onchange="updCapesFiche('${k}',this)">
+        <select data-fi="${i}" data-ff="label" onchange="updCapesFiche('${k}',this)" ${f.locked?'disabled':''}>
           <option value="">—</option>
           ${CAPES_LABELS.map(l=>`<option value="${l}"${f.label===l?' selected':''}>${l}</option>`).join('')}
         </select>
       </div>
       <div class="fl">
         <div class="lbl">Note</div>
-        <input type="text" value="${f.note||''}" placeholder="facultatif" data-fi="${i}" data-ff="note" oninput="updCapesFiche('${k}',this)">
+        <input type="text" value="${f.note||''}" placeholder="facultatif" data-fi="${i}" data-ff="note" oninput="updCapesFiche('${k}',this)" ${f.locked?'disabled':''}>
       </div>
     </div>
   `).join('');
@@ -785,16 +791,44 @@ function buildCapesFichesSection(d,k){
   </div>`;
 }
 
+function keepCapesOpen(k){
+  rebuildSheet(k);
+  openSectionByTitle('CAPES');
+}
+
+function openSectionByTitle(title){
+  document.querySelectorAll('.section').forEach(sec=>{
+    const t=sec.querySelector('.sec-title');
+    const body=sec.querySelector('.sec-body');
+    const arrow=sec.querySelector('.sec-arrow');
+    if(t && t.textContent.trim()===title && body){
+      body.classList.add('open');
+      if(arrow)arrow.style.transform='rotate(180deg)';
+    }
+  });
+}
+
 function addCapesFiche(k){
   const day=initDay(k);
   day.capesFichesList=day.capesFichesList||[];
-  day.capesFichesList.push({title:'',label:'',note:'',createdAt:k});
-  rebuildSheet(k);
+  day.capesFichesList.push({title:'',label:'',note:'',createdAt:k,locked:false});
+  saveData();
+  keepCapesOpen(k);
 }
 
 function removeCapesFiche(k,i){
   initDay(k).capesFichesList.splice(i,1);
-  rebuildSheet(k);
+  saveData();
+  keepCapesOpen(k);
+}
+
+function toggleCapesFicheLock(k,i){
+  const day=initDay(k);
+  day.capesFichesList=day.capesFichesList||[];
+  day.capesFichesList[i]=day.capesFichesList[i]||{};
+  day.capesFichesList[i].locked=!day.capesFichesList[i].locked;
+  saveData();
+  keepCapesOpen(k);
 }
 
 function updCapesFiche(k,input){
@@ -803,33 +837,42 @@ function updCapesFiche(k,input){
   const f=input.dataset.ff;
   day.capesFichesList=day.capesFichesList||[];
   day.capesFichesList[i]=day.capesFichesList[i]||{};
+  if(day.capesFichesList[i].locked)return;
   day.capesFichesList[i][f]=input.tagName==='SELECT'
     ? input.options[input.selectedIndex].value
     : input.value;
 }
-  function buildCapesBooksSection(d,k){
+
+function buildCapesBooksSection(d,k){
   const books=d.capesBooksList||[];
   const rows=books.map((b,i)=>`
     <div class="add-item">
-      <div class="add-item-header"><span style="font-size:12px;font-weight:500">${b.title||'Livre CAPES'}</span><button class="rm-btn" onclick="removeCapesBook('${k}',${i})">×</button></div>
-      <div class="fl"><div class="lbl">Titre</div><input type="text" value="${b.title||''}" data-ci="${i}" data-cf="title" oninput="updCapesBook('${k}',this)"></div>
-      <div class="fl"><div class="lbl">Auteur</div><input type="text" value="${b.author||''}" data-ci="${i}" data-cf="author" oninput="updCapesBook('${k}',this)"></div>
+      <div class="add-item-header">
+        <span style="font-size:12px;font-weight:500">${b.locked?'🔒 ':''}${b.title||'Livre CAPES'}</span>
+        <div>
+          <button class="rm-btn" onclick="toggleCapesBookLock('${k}',${i})" title="${b.locked?'Déverrouiller':'Verrouiller'}">${b.locked?'🔓':'🔒'}</button>
+          <button class="rm-btn" onclick="removeCapesBook('${k}',${i})">×</button>
+        </div>
+      </div>
+      <div class="fl"><div class="lbl">Titre</div><input type="text" value="${b.title||''}" data-ci="${i}" data-cf="title" oninput="updCapesBook('${k}',this)" ${b.locked?'disabled':''}></div>
+      <div class="fl"><div class="lbl">Auteur</div><input type="text" value="${b.author||''}" data-ci="${i}" data-cf="author" oninput="updCapesBook('${k}',this)" ${b.locked?'disabled':''}></div>
       <div class="two">
-        <div class="fl"><div class="lbl">Label</div><select data-ci="${i}" data-cf="label" onchange="updCapesBook('${k}',this)">
+        <div class="fl"><div class="lbl">Label</div><select data-ci="${i}" data-cf="label" onchange="updCapesBook('${k}',this)" ${b.locked?'disabled':''}>
           <option value="">—</option>
           ${CAPES_LABELS.map(l=>`<option value="${l}"${b.label===l?' selected':''}>${l}</option>`).join('')}
         </select></div>
-        <div class="fl"><div class="lbl">Statut</div><select data-ci="${i}" data-cf="status" onchange="updCapesBook('${k}',this)">
+        <div class="fl"><div class="lbl">Statut</div><select data-ci="${i}" data-cf="status" onchange="updCapesBook('${k}',this)" ${b.locked?'disabled':''}>
           <option value="à lire"${b.status==='à lire'?' selected':''}>À lire</option>
           <option value="en cours"${b.status==='en cours'?' selected':''}>En cours</option>
           <option value="terminé"${b.status==='terminé'?' selected':''}>Terminé</option>
         </select></div>
       </div>
-      <div class="fl"><div class="lbl">Note</div><input type="text" value="${b.note||''}" placeholder="facultatif" data-ci="${i}" data-cf="note" oninput="updCapesBook('${k}',this)"></div>
+      <div class="fl"><div class="lbl">Note</div><input type="text" value="${b.note||''}" placeholder="facultatif" data-ci="${i}" data-cf="note" oninput="updCapesBook('${k}',this)" ${b.locked?'disabled':''}></div>
     </div>`).join('');
   return `<div class="fl"><div class="lbl">Livres CAPES</div>${rows}<button class="add-btn" onclick="addCapesBook('${k}')">+ Ajouter un livre</button></div>`;
 }
-  function buildCapesLibraryTabs(d,k){
+
+function buildCapesLibraryTabs(d,k){
   const active=d._capesLibTab||'books';
   return `<div class="fl">
     <div class="lbl">Bibliographie CAPES</div>
@@ -854,22 +897,28 @@ function buildCapesArticlesSection(d,k){
   const articles=d.capesArticlesList||[];
   const rows=articles.map((a,i)=>`
     <div class="add-item">
-      <div class="add-item-header"><span style="font-size:12px;font-weight:500">${a.title||'Article CAPES'}</span><button class="rm-btn" onclick="removeCapesArticle('${k}',${i})">×</button></div>
-      <div class="fl"><div class="lbl">Titre</div><input type="text" value="${a.title||''}" data-ai="${i}" data-af="title" oninput="updCapesArticle('${k}',this)"></div>
-      <div class="fl"><div class="lbl">Auteur</div><input type="text" value="${a.author||''}" data-ai="${i}" data-af="author" oninput="updCapesArticle('${k}',this)"></div>
+      <div class="add-item-header">
+        <span style="font-size:12px;font-weight:500">${a.locked?'🔒 ':''}${a.title||'Article CAPES'}</span>
+        <div>
+          <button class="rm-btn" onclick="toggleCapesArticleLock('${k}',${i})" title="${a.locked?'Déverrouiller':'Verrouiller'}">${a.locked?'🔓':'🔒'}</button>
+          <button class="rm-btn" onclick="removeCapesArticle('${k}',${i})">×</button>
+        </div>
+      </div>
+      <div class="fl"><div class="lbl">Titre</div><input type="text" value="${a.title||''}" data-ai="${i}" data-af="title" oninput="updCapesArticle('${k}',this)" ${a.locked?'disabled':''}></div>
+      <div class="fl"><div class="lbl">Auteur</div><input type="text" value="${a.author||''}" data-ai="${i}" data-af="author" oninput="updCapesArticle('${k}',this)" ${a.locked?'disabled':''}></div>
       <div class="two">
-        <div class="fl"><div class="lbl">Label</div><select data-ai="${i}" data-af="label" onchange="updCapesArticle('${k}',this)">
+        <div class="fl"><div class="lbl">Label</div><select data-ai="${i}" data-af="label" onchange="updCapesArticle('${k}',this)" ${a.locked?'disabled':''}>
           <option value="">—</option>
           ${CAPES_LABELS.map(l=>`<option value="${l}"${a.label===l?' selected':''}>${l}</option>`).join('')}
         </select></div>
-        <div class="fl"><div class="lbl">Statut</div><select data-ai="${i}" data-af="status" onchange="updCapesArticle('${k}',this)">
+        <div class="fl"><div class="lbl">Statut</div><select data-ai="${i}" data-af="status" onchange="updCapesArticle('${k}',this)" ${a.locked?'disabled':''}>
           <option value="à lire"${a.status==='à lire'?' selected':''}>À lire</option>
           <option value="en cours"${a.status==='en cours'?' selected':''}>En cours</option>
           <option value="terminé"${a.status==='terminé'?' selected':''}>Terminé</option>
         </select></div>
       </div>
-      <div class="fl"><div class="lbl">Revue / source</div><input type="text" value="${a.source||''}" placeholder="facultatif" data-ai="${i}" data-af="source" oninput="updCapesArticle('${k}',this)"></div>
-      <div class="fl"><div class="lbl">Note</div><input type="text" value="${a.note||''}" placeholder="facultatif" data-ai="${i}" data-af="note" oninput="updCapesArticle('${k}',this)"></div>
+      <div class="fl"><div class="lbl">Revue / source</div><input type="text" value="${a.source||''}" placeholder="facultatif" data-ai="${i}" data-af="source" oninput="updCapesArticle('${k}',this)" ${a.locked?'disabled':''}></div>
+      <div class="fl"><div class="lbl">Note</div><input type="text" value="${a.note||''}" placeholder="facultatif" data-ai="${i}" data-af="note" oninput="updCapesArticle('${k}',this)" ${a.locked?'disabled':''}></div>
     </div>`).join('');
 
   return `<div class="fl">${rows}<button class="add-btn" onclick="addCapesArticle('${k}')">+ Ajouter un article</button></div>`;
@@ -878,13 +927,24 @@ function buildCapesArticlesSection(d,k){
 function addCapesArticle(k){
   const day=initDay(k);
   day.capesArticlesList=day.capesArticlesList||[];
-  day.capesArticlesList.push({title:'',author:'',label:'',status:'en cours',source:'',note:''});
-  rebuildSheet(k);
+  day.capesArticlesList.push({title:'',author:'',label:'',status:'en cours',source:'',note:'',locked:false});
+  saveData();
+  keepCapesOpen(k);
 }
 
 function removeCapesArticle(k,i){
   initDay(k).capesArticlesList.splice(i,1);
-  rebuildSheet(k);
+  saveData();
+  keepCapesOpen(k);
+}
+
+function toggleCapesArticleLock(k,i){
+  const day=initDay(k);
+  day.capesArticlesList=day.capesArticlesList||[];
+  day.capesArticlesList[i]=day.capesArticlesList[i]||{};
+  day.capesArticlesList[i].locked=!day.capesArticlesList[i].locked;
+  saveData();
+  keepCapesOpen(k);
 }
 
 function updCapesArticle(k,input){
@@ -893,13 +953,43 @@ function updCapesArticle(k,input){
   const f=input.dataset.af;
   day.capesArticlesList=day.capesArticlesList||[];
   day.capesArticlesList[i]=day.capesArticlesList[i]||{};
+  if(day.capesArticlesList[i].locked)return;
   day.capesArticlesList[i][f]=input.tagName==='SELECT'
     ? input.options[input.selectedIndex].value
     : input.value;
 }
-function addCapesBook(k){const day=initDay(k);day.capesBooksList=day.capesBooksList||[];day.capesBooksList.push({title:'',author:'',label:'',status:'en cours',note:''});rebuildSheet(k);}
-function removeCapesBook(k,i){initDay(k).capesBooksList.splice(i,1);rebuildSheet(k);}
-function updCapesBook(k,input){const day=initDay(k);const i=+input.dataset.ci,f=input.dataset.cf;day.capesBooksList[i]=day.capesBooksList[i]||{};day.capesBooksList[i][f]=input.tagName==='SELECT'?input.options[input.selectedIndex].value:input.value;}
+
+function addCapesBook(k){
+  const day=initDay(k);
+  day.capesBooksList=day.capesBooksList||[];
+  day.capesBooksList.push({title:'',author:'',label:'',status:'en cours',note:'',locked:false});
+  saveData();
+  keepCapesOpen(k);
+}
+
+function removeCapesBook(k,i){
+  initDay(k).capesBooksList.splice(i,1);
+  saveData();
+  keepCapesOpen(k);
+}
+
+function toggleCapesBookLock(k,i){
+  const day=initDay(k);
+  day.capesBooksList=day.capesBooksList||[];
+  day.capesBooksList[i]=day.capesBooksList[i]||{};
+  day.capesBooksList[i].locked=!day.capesBooksList[i].locked;
+  saveData();
+  keepCapesOpen(k);
+}
+
+function updCapesBook(k,input){
+  const day=initDay(k);
+  const i=+input.dataset.ci,f=input.dataset.cf;
+  day.capesBooksList=day.capesBooksList||[];
+  day.capesBooksList[i]=day.capesBooksList[i]||{};
+  if(day.capesBooksList[i].locked)return;
+  day.capesBooksList[i][f]=input.tagName==='SELECT'?input.options[input.selectedIndex].value:input.value;
+}
 
 /* ── Travail ── */
 function secTravail(d,k){
@@ -1004,7 +1094,7 @@ function collectSheet(k){
   const set=(id,field,parse)=>{const el=g(id);if(el&&el.value!=='')day[field]=parse?parse(el.value):el.value;};
   set('mn-','mentalNote');set('jn-','journal');set('cn-','capesNote');
   set('ev-k-','event');set('act-','activity');set('travailNote-','travailNote');
-  set('med-name-','medName');set('med-dose-','medDose');set('med-time-','medTime');
+  set('med-name-','medName');set('med-dose-','medDose');set('med-time-','medTime');set('meal-desc-','mealDesc');
   /* écriture */
   const ec=day.ecriture=day.ecriture||{roman:{},poesie:{}};
   const rv=id=>document.getElementById(id+k);
@@ -1105,6 +1195,60 @@ function reopenProject(idx){const projects=getProjects();projects[idx].closed=fa
 /* ════════════════════════════════════════════════
    STATISTIQUES GÉNÉRALES
    ════════════════════════════════════════════════ */
+
+function sleepHoursForStats(d){
+  if(!d.sleepStart||!d.sleepEnd)return null;
+  const[sh,sm]=d.sleepStart.split(':').map(Number),[eh,em]=d.sleepEnd.split(':').map(Number);
+  if(!Number.isFinite(sh)||!Number.isFinite(eh))return null;
+  let m=(eh*60+em)-(sh*60+sm);
+  if(m<0)m+=1440;
+  return Math.round((m/60)*10)/10;
+}
+function medHourForStats(d){
+  if(!d.medTime)return null;
+  const[h,m]=d.medTime.split(':').map(Number);
+  if(!Number.isFinite(h))return null;
+  return Math.round((h+(m||0)/60)*10)/10;
+}
+function sportMinutesForStats(d){
+  if(!d||!d.sportData)return 0;
+  return Object.values(d.sportData).reduce((a,sd)=>a+parseSportNumber(sd['durée (min)']||sd['duree (min)']),0);
+}
+function moodScoreForStats(m){return {vl:1,l:2,n:3,g:4,vg:5,h:6}[m]||null;}
+function getHealthEntries(){
+  const entries=Object.entries(DATA).filter(([k])=>k.match(/^\d{4}-\d{2}-\d{2}$/)).sort(([a],[b])=>a.localeCompare(b));
+  if(healthRangeDays==='all')return entries;
+  const days=+healthRangeDays||30;
+  const today=new Date();today.setHours(0,0,0,0);
+  const from=new Date(today);from.setDate(from.getDate()-days+1);
+  return entries.filter(([k])=>{const dt=parseDateKey(k);return dt>=from&&dt<=today;});
+}
+function toggleHealthSeries(key,cb){
+  healthVisible[key]=cb.checked;
+  renderHealthChart();
+}
+function setHealthRange(v){
+  healthRangeDays=v;
+  renderHealthChart();
+}
+function renderHealthChart(){
+  const canvas=document.getElementById('health-chart');
+  if(!canvas)return;
+  const entries=getHealthEntries();
+  const labels=entries.map(([k])=>k.slice(5));
+  const days=entries.map(([,d])=>d||{});
+  const datasets=[
+    {key:'sleep',label:'Sommeil (h)',data:days.map(sleepHoursForStats),yAxisID:'yHours',borderWidth:2,tension:.25,spanGaps:true},
+    {key:'mood',label:'Humeur (1 très basse → 6 agitation)',data:days.map(d=>moodScoreForStats(d.mood)),yAxisID:'yScore',borderWidth:2,tension:.25,spanGaps:true},
+    {key:'med',label:'Heure prise médoc',data:days.map(medHourForStats),yAxisID:'yHours',borderWidth:2,tension:.25,spanGaps:true},
+    {key:'stressT',label:'Stress travail',data:days.map(d=>d.stressTravail||null),yAxisID:'yScore',borderWidth:2,tension:.25,spanGaps:true},
+    {key:'stressS',label:'Stress social',data:days.map(d=>d.stressSocial||null),yAxisID:'yScore',borderWidth:2,tension:.25,spanGaps:true},
+    {key:'energy',label:'Énergie',data:days.map(d=>d.energy||null),yAxisID:'yScore',borderWidth:2,tension:.25,spanGaps:true},
+    {key:'sport',label:'Sport (min)',data:days.map(sportMinutesForStats),yAxisID:'ySport',borderWidth:2,tension:.25,spanGaps:true}
+  ].map(ds=>({...ds,hidden:!healthVisible[ds.key]}));
+  if(healthChart)healthChart.destroy();
+  healthChart=new Chart(canvas,{type:'line',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y===null?'—':ctx.parsed.y}`}}},scales:{x:{ticks:{font:{size:10},maxRotation:45}},yScore:{type:'linear',position:'left',min:0,max:10,title:{display:true,text:'humeur / stress / énergie'}},yHours:{type:'linear',position:'right',min:0,max:24,grid:{drawOnChartArea:false},title:{display:true,text:'heures'}},ySport:{type:'linear',position:'right',grid:{drawOnChartArea:false},display:false}}}});
+}
 function showStat(p,btn){curStat=p;document.querySelectorAll('.st').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderStats(p);}
 
 function filterEntries(period){
@@ -1260,9 +1404,29 @@ const chartBooksRepId='chart-books-rep-'+Date.now();
 const chartBooksStatusId='chart-books-status-'+Date.now();
 const chartArticlesRepId='chart-articles-rep-'+Date.now();
 const chartArticlesStatusId='chart-articles-status-'+Date.now();
+const healthChartId='health-chart';
 
   document.getElementById('stat-content').innerHTML=`
   <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Période : ${label} · ${allDays.length} jour${allDays.length!==1?'s':''} renseigné${allDays.length!==1?'s':''}</div>
+
+  <div class="stitle">Suivi santé <span class="stitle-badge">modulable</span></div>
+  <div class="add-item" style="margin-bottom:12px">
+    <div class="fl"><div class="lbl">Durée affichée</div>
+      <select onchange="setHealthRange(this.value)">
+        <option value="7" ${healthRangeDays==='7'?'selected':''}>7 derniers jours</option>
+        <option value="14" ${healthRangeDays==='14'?'selected':''}>14 derniers jours</option>
+        <option value="30" ${healthRangeDays==='30'?'selected':''}>30 derniers jours</option>
+        <option value="60" ${healthRangeDays==='60'?'selected':''}>60 derniers jours</option>
+        <option value="90" ${healthRangeDays==='90'?'selected':''}>90 derniers jours</option>
+        <option value="all" ${healthRangeDays==='all'?'selected':''}>Tout</option>
+      </select>
+    </div>
+    <div class="chips">
+      ${[['sleep','Sommeil'],['mood','Humeur'],['med','Médicaments'],['stressT','Stress travail'],['stressS','Stress social'],['energy','Énergie'],['sport','Sport']].map(([key,label])=>`<label class="chip${healthVisible[key]?' sel':''}" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" ${healthVisible[key]?'checked':''} onchange="toggleHealthSeries('${key}',this)" style="width:auto">${label}</label>`).join('')}
+    </div>
+    <div style="font-size:11px;color:var(--text3)">Axes : humeur/stress/énergie à gauche, heures à droite, sport en minutes au survol.</div>
+  </div>
+  <div class="chart-wrap" style="height:300px;margin-bottom:14px"><canvas id="${healthChartId}" role="img" aria-label="Suivi santé modulable">Suivi santé.</canvas></div>
 
   <div class="stat-grid">
     <div class="sc"><div class="sc-label">Énergie moyenne</div><div class="sc-val">${avgE||'—'}</div><div class="sc-sub">sur 10</div></div>
@@ -1383,6 +1547,8 @@ ${allCapesArticles.length ? allCapesArticles.map(a=>`
     <button onclick="importJSON()" style="font-size:12px;padding:6px 13px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">Importer JSON</button>
     <button onclick="syncFromDropbox()" style="font-size:12px;padding:6px 13px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">Charger Dropbox</button>
   </div>`;
+
+  renderHealthChart();
 
   /* Chart répartition du temps travail */
   const tCanvas=document.getElementById(timeId);
@@ -1621,9 +1787,9 @@ function renderBilanSport(){
 function exportJSON(){const blob=new Blob([JSON.stringify(DATA,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='carnet_de_bord_v7.json';a.click();}
 function importJSON(){const input=document.createElement('input');input.type='file';input.accept='application/json,.json';input.onchange=()=>{const file=input.files&&input.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const imported=JSON.parse(reader.result);if(!imported||typeof imported!=='object'||Array.isArray(imported))throw new Error('Format invalide');if(confirm('Remplacer les données locales par ce carnet JSON ?')){DATA=imported;saveData();renderCal();renderStats();}}catch(e){alert('Impossible d\'importer ce JSON.');}};reader.readAsText(file);};input.click();}
 function exportCSV(){
-  const rows=[['date','humeur','énergie','sport','mots_roman','pages_roman','mots_poesie','fiches_capes','stress_travail','stress_social','sommeil_début','sommeil_fin','repas','poids','médicament','statut_med']];
+  const rows=[['date','humeur','énergie','sport','mots_roman','pages_roman','mots_poesie','fiches_capes','stress_travail','stress_social','sommeil_début','sommeil_fin','repas','descriptif_repas','poids','médicament','statut_med']];
   Object.entries(DATA).filter(([k])=>k.match(/^\d{4}-\d{2}-\d{2}$/)).sort(([a],[b])=>a.localeCompare(b)).forEach(([k,d])=>{
-    rows.push([k,d.mood||'',d.energy||'',((d.sport||[]).join('|'))||'',d.ecriture?.roman?.mots||'',d.ecriture?.roman?.pages||'',d.ecriture?.poesie?.mots||'',d.fiches||'',d.stressTravail||'',d.stressSocial||'',d.sleepStart||'',d.sleepEnd||'',d.meal||'',d.weight||'',d.medName||'',d.medStatus||'']);
+    rows.push([k,d.mood||'',d.energy||'',((d.sport||[]).join('|'))||'',d.ecriture?.roman?.mots||'',d.ecriture?.roman?.pages||'',d.ecriture?.poesie?.mots||'',d.fiches||'',d.stressTravail||'',d.stressSocial||'',d.sleepStart||'',d.sleepEnd||'',d.meal||'',d.mealDesc||'',d.weight||'',d.medName||'',d.medStatus||'']);
   });
   const csv=rows.map(r=>r.join(',')).join('\n');
   const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='carnet_de_bord_v7.csv';a.click();
