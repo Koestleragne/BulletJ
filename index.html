@@ -327,7 +327,7 @@ textarea{resize:vertical;min-height:56px}
       <div style="display:flex;gap:6px;flex-wrap:wrap" id="qe-med-row">
         <button class="qmb" onclick="qeSetMed('pris',this)">pris</button>
         <button class="qmb" onclick="qeSetMed('oublie',this)">oublié</button>
-        <button class="qmb" onclick="qeSetMed('decale',this)">decale</button>
+        <button class="qmb" onclick="qeSetMed('decale',this)">décalé</button>
       </div>
     </div>
     <div class="quick-section">
@@ -582,10 +582,10 @@ async function syncFromDropbox(){
         localStorage.setItem('bj_v7',JSON.stringify(DATA));
         renderCal();renderStats();updateDropboxButton('Synchronisé ✓',true);
       } else {
-        updateDropboxButton('Local à jour',true);
+        updateDropboxButton('Dropbox connecté',true);
       }
     }
-  }catch(e){const msg=String(e.message||e);if(msg.includes('path/not_found')){await uploadDropboxFile();return;}console.error(e);updateDropboxButton('Erreur lecture',false);}
+  }catch(e){const msg=String(e.message||e);if(msg.includes('path/not_found')){await uploadDropboxFile();updateDropboxButton('Dropbox connecté',true);return;}console.error(e);updateDropboxButton('Erreur lecture',false);}
 }
 async function uploadDropboxFile(){
   if(!dropboxTokenValid())return;
@@ -939,7 +939,7 @@ function renderCal(){
     const ec=day.ecriture;if(ec&&((ec.roman&&(ec.roman.mots||ec.roman.pages))||(ec.poesie&&ec.poesie.mots)))dots+=`<div class="dot" style="background:#7f77dd"></div>`;
     if(day.fiches||day.capesNote||(day.capesFichesList&&day.capesFichesList.length))dots+=`<div class="dot" style="background:#d4537e"></div>`;
     if(day.medStatus==='oublié')dots+=`<div class="dot" style="background:#e24b4a;border:1px solid #a32d2d" title="Teralite oublié"></div>`;
-    else if(day.medStatus==='decale')dots+=`<div class="dot" style="background:#ba7517" title="Teralite decale"></div>`;
+    else if(day.medStatus==='décalé')dots+=`<div class="dot" style="background:#ba7517" title="Teralite décalé"></div>`;
     if(hasDl)dots+=`<div class="deadline-dot"></div>`;
     if(dayDeadlines.length){
     el.title=dayDeadlines.map(dl=>`${dl.label} — ${dl.category||'échéance'}`).join('\n');
@@ -1008,7 +1008,7 @@ function secMental(d,k){
     <div class="two">
       <div class="fl"><div class="lbl">Teralite — heure de prise</div><input type="time" id="med-time-${k}" value="${d.medTime||''}"></div>
       <div class="fl"><div class="lbl">Statut</div><div class="mood-btns" style="margin-top:4px">
-        ${['pris','oublié','decale'].map(s=>`<button class="mb${d.medStatus===s?' sel-ok':''}" onclick="initDay('${k}').medStatus='${s}';this.closest('.mood-btns').querySelectorAll('.mb').forEach(b=>b.className='mb');this.className='mb sel-ok'">${s}</button>`).join('')}
+        ${['pris','oublié','décalé'].map(s=>`<button class="mb${d.medStatus===s?' sel-ok':''}" onclick="initDay('${k}').medStatus='${s}';this.closest('.mood-btns').querySelectorAll('.mb').forEach(b=>b.className='mb');this.className='mb sel-ok'">${s}</button>`).join('')}
       </div></div>
     </div>
     <div class="fl"><div class="lbl">Note du jour</div><textarea id="mn-${k}" placeholder="Comment tu te sens...">${d.mentalNote||''}</textarea></div>
@@ -1842,7 +1842,7 @@ const healthChartId='health-chart';
      NOUVELLES STATS AVANCÉES
      ══════════════════════════════════════ */
 
-  /* ── Corrélations decalees J+1 et J+2 ── */
+  /* ── Corrélations décalées J+1 et J+2 ── */
   function corrLag(fnX,fnY,lag){
     const sorted=allEntriesAll;
     const pairs=[];
@@ -2002,170 +2002,7 @@ const healthChartId='health-chart';
   /* ── Badges hebdomadaires (reset chaque semaine) ── */
   const weeklyBadgesHtml=renderWeeklyBadges(weekAllDays);
 
-  document.getElementById('stat-content').innerHTML=`
-  <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Période : ${label} · ${allDays.length} jour${allDays.length!==1?'s':''} renseigné${allDays.length!==1?'s':''}</div>
 
-  <div class="stitle">Titre de la semaine <span class="stitle-badge">reset lundi</span></div>
-  ${weekTitle}
-  ${weeklyBadgesHtml}
-
-  <div class="stitle">Suivi santé <span class="stitle-badge">modulable</span></div>
-  <div class="add-item" style="margin-bottom:12px">
-    <div class="fl"><div class="lbl">Durée affichée</div>
-      <select onchange="setHealthRange(this.value)">
-        <option value="7" ${healthRangeDays==='7'?'selected':''}>7 derniers jours</option>
-        <option value="14" ${healthRangeDays==='14'?'selected':''}>14 derniers jours</option>
-        <option value="30" ${healthRangeDays==='30'?'selected':''}>30 derniers jours</option>
-        <option value="60" ${healthRangeDays==='60'?'selected':''}>60 derniers jours</option>
-        <option value="90" ${healthRangeDays==='90'?'selected':''}>90 derniers jours</option>
-        <option value="all" ${healthRangeDays==='all'?'selected':''}>Tout</option>
-      </select>
-    </div>
-    <div class="chips">
-      ${[['sleep','Sommeil'],['mood','Humeur'],['med','Teralite'],['stressT','Stress travail'],['stressS','Stress social'],['energy','Énergie'],['sport','Sport']].map(([key,lbl2])=>`<label class="chip${healthVisible[key]?' sel':''}" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" ${healthVisible[key]?'checked':''} onchange="toggleHealthSeries('${key}',this)" style="width:auto">${lbl2}</label>`).join('')}
-    </div>
-    <div style="font-size:11px;color:var(--text3)">Axes : humeur/stress/énergie à gauche, heures à droite.</div>
-  </div>
-  <div class="chart-wrap" style="height:300px;margin-bottom:14px"><canvas id="health-chart" role="img" aria-label="Suivi santé modulable">Suivi santé.</canvas></div>
-
-  ${rollingData.length>=5?`<div class="stitle">Tendance humeur — fenêtre glissante 7 jours</div>
-  <div class="chart-wrap" style="height:180px;margin-bottom:14px"><canvas id="${rollingId}" role="img" aria-label="Humeur moyenne 7 jours">Tendance humeur.</canvas></div>`:''}
-
-  <div class="stitle">Humeur & énergie par jour de la semaine</div>
-  <div class="chart-wrap" style="height:200px;margin-bottom:14px"><canvas id="${dowRadarId}" role="img" aria-label="Profil hebdomadaire">Profil hebdomadaire.</canvas></div>
-
-  <div class="stat-grid">
-    <div class="sc"><div class="sc-label">Énergie moyenne</div><div class="sc-val">${avgE||'—'}</div><div class="sc-sub">sur 10</div></div>
-    <div class="sc"><div class="sc-label">Jours sport</div><div class="sc-val">${sportD.length}</div></div>
-    <div class="sc"><div class="sc-label">Mots écrits</div><div class="sc-val">${(totalRomanMots+totalPoesieMots).toLocaleString('fr-FR')}</div><div class="sc-sub">roman + poésie</div></div>
-    <div class="sc"><div class="sc-label">Fiches CAPES</div><div class="sc-val">${totalFiches}</div></div>
-  </div>
-  <div class="stat-grid">
-    <div class="sc"><div class="sc-label">Stress travail moy.</div><div class="sc-val">${avgStressT||'—'}</div><div class="sc-sub">sur 5</div></div>
-    <div class="sc"><div class="sc-label">Stress social moy.</div><div class="sc-val">${avgStressS||'—'}</div><div class="sc-sub">sur 5</div></div>
-    <div class="sc"><div class="sc-label">Jours stress élevé</div><div class="sc-val">${highStressDays}</div><div class="sc-sub">score ≥ 4</div></div>
-    <div class="sc"><div class="sc-label">Rencontres</div><div class="sc-val">${totalSoc}</div></div>
-  </div>
-
-  ${warns.map(w=>`<div class="warn-box">${w}</div>`).join('')}
-
-  <div class="stitle">Heatmap annuelle <span class="stitle-badge">${now.getFullYear()}</span></div>
-  ${renderHeatmap(now.getFullYear())}
-
-  <div class="stitle">Portrait-robot de ton meilleur toi</div>
-  ${bestSelfHtml}
-
-  ${yearAgoHtml?`<div class="stitle">Comparaison — il y a un an</div>${yearAgoHtml}`:''}
-
-  <div class="stitle">Derniers records <span class="stitle-badge">distance au sommet</span></div>
-  ${recordsHtml||'<div style="font-size:13px;color:var(--text3)">Pas encore de données suffisantes.</div>'}
-
-  <div class="stitle">Séries (streaks) <span class="stitle-badge">gamification</span></div>
-  <div class="streak-row"><span class="streak-fire">🔥</span><span class="streak-val">${sportStreak.cur}</span><span class="streak-lbl">jours de sport consécutifs</span><span class="streak-max">record : ${sportStreak.max}j${sportStreak.maxEndDate?' ('+sportStreak.maxEndDate+')':''}</span></div>
-  <div class="streak-row"><span class="streak-fire">✍️</span><span class="streak-val">${ecritureStreak.cur}</span><span class="streak-lbl">jours d'écriture consécutifs</span><span class="streak-max">record : ${ecritureStreak.max}j</span></div>
-  <div class="streak-row"><span class="streak-fire">💧</span><span class="streak-val">${sportStreak7.cur}</span><span class="streak-lbl">jours sans coca</span><span class="streak-max">record : ${sportStreak7.max}j</span></div>
-  <div class="streak-row"><span class="streak-fire">🎓</span><span class="streak-val">${calcStreak(d=>d.capesFichesList?.length>0||d.capesNote).cur}</span><span class="streak-lbl">jours de travail CAPES consécutifs</span><span class="streak-max">record : ${calcStreak(d=>d.capesFichesList?.length>0||d.capesNote).max}j</span></div>
-
-  <div class="stitle">Badges permanents</div>
-  ${renderBadges()}
-
-  <div class="stitle">Projets <span class="stitle-badge">${activeProj.length} actifs · ${closedProj.length} terminés</span></div>
-  <div class="stat-grid">
-    <div class="sc gold"><div class="sc-label">Projets actifs</div><div class="sc-val">${activeProj.length}</div></div>
-    <div class="sc"><div class="sc-label">Projets terminés</div><div class="sc-val">${closedProj.length}</div></div>
-    ${avgProjDays!==null?`<div class="sc"><div class="sc-label">Durée moy. projet</div><div class="sc-val">${avgProjDays}j</div></div>`:''}
-  </div>
-  ${closedProj.length?`<div style="font-size:12px;color:var(--text2)">Projet le plus long : <strong>${closedProj.sort((a,b)=>((new Date(b.endDate)-new Date(b.startDate))||0)-((new Date(a.endDate)-new Date(a.startDate))||0))[0].name}</strong></div>`:''}
-
-  <div class="stitle">Gestion du temps — travail</div>
-  ${travailBars||'<div style="font-size:13px;color:var(--text3)">Aucun temps de travail renseigné.</div>'}
-  <div class="stitle">Répartition du temps <span class="stitle-badge">graphique</span></div>
-  <div class="chart-wrap" style="height:200px"><canvas id="${timeId}" role="img" aria-label="Répartition du temps travail">Répartition du temps de travail.</canvas></div>
-
-  <div class="stitle">Écriture <span class="stitle-badge">roman + poésie</span></div>
-  <div class="stat-grid">
-    <div class="sc"><div class="sc-label">Mots roman</div><div class="sc-val">${totalRomanMots.toLocaleString('fr-FR')}</div><div class="sc-sub">≈ ${Math.round(totalRomanMots/80000*10)/10} roman de Zola</div></div>
-    <div class="sc"><div class="sc-label">Pages roman</div><div class="sc-val">${totalRomanPages}</div></div>
-    <div class="sc"><div class="sc-label">Poèmes</div><div class="sc-val">${totalPoemes}</div></div>
-    <div class="sc"><div class="sc-label">Mots poésie</div><div class="sc-val">${totalPoesieMots.toLocaleString('fr-FR')}</div></div>
-  </div>
-  ${regularityHtml}
-
-  <div class="stitle">Répartition des humeurs</div>
-  ${moodBars||'<div style="font-size:13px;color:var(--text3)">Aucune humeur renseignée.</div>'}
-
-  ${kmCourse>0?`<div class="stitle">Équivalences fun <span class="stitle-badge">pour sourire</span></div>
-  <div class="stat-grid">
-    <div class="sc hl"><div class="sc-label">Km courus</div><div class="sc-val">${Math.round(kmCourse)}</div><div class="sc-sub">= ${luxPct}% de la largeur du Luxembourg</div></div>
-    <div class="sc"><div class="sc-label">Heures de sport</div><div class="sc-val">${heuresSport}</div><div class="sc-sub">≈ ${Math.round(heuresSport/24*10)/10} journées entières</div></div>
-    <div class="sc"><div class="sc-label">Mots écrits total</div><div class="sc-val">${(totalRomanMots+totalPoesieMots).toLocaleString('fr-FR')}</div><div class="sc-sub">≈ ${Math.round((totalRomanMots+totalPoesieMots)/250)} pages imprimées</div></div>
-  </div>`:''}
-
-  <div class="stitle">Frise des événements</div>
-  ${timelineHtml}
-
-  <div class="stitle">CAPES — couverture thématique</div>
-  ${renderCapesRadar(allFiches,allCapesBooks,allCapesArticles,capesObj)}
-  <div style="margin-top:8px">
-    <div class="lbl" style="margin-bottom:4px">Objectif fiches</div>
-    <input type="number" min="1" max="500" value="${capesObj}" style="width:100px;font-size:13px;padding:5px 8px;border:0.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif" oninput="DATA['__capesObj']=+this.value||100;saveData()">
-  </div>
-  ${capesTempsHtml?`<div class="stitle">Temps par thème CAPES <span class="stitle-badge">estimé via fiches</span></div>${capesTempsHtml}`:''}
-
-  <div class="stitle">Bibliothèque des fiches CAPES (${allFiches.length})</div>
-  ${allFiches.length?allFiches.map(f=>`
-    <div class="book-item">
-      <div class="book-title">${f.title}</div>
-      <div class="book-meta">${f.date} · ${f.label||'sans label'}</div>
-      ${f.note?`<div style="font-size:11px;color:var(--text2);margin-top:3px">${f.note}</div>`:''}
-    </div>`).join(''):'<div style="font-size:13px;color:var(--text3)">Aucune fiche CAPES renseignée.</div>'}
-  <div class="stitle">Bibliothèque — loisir (${loisirBooks.length})</div>${loisirList}
-  <div class="stitle">Graphiques CAPES <span class="stitle-badge">fiches & livres</span></div>
-  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartFichesRepId}" role="img" aria-label="Répartition des fiches CAPES par label">Répartition des fiches CAPES par label.</canvas></div>
-  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartFichesProdId}" role="img" aria-label="Production des fiches CAPES par date">Production des fiches CAPES par date.</canvas></div>
-  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartBooksRepId}" role="img" aria-label="Répartition des livres CAPES par label">Répartition des livres CAPES par label.</canvas></div>
-  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartBooksStatusId}" role="img" aria-label="Statut des livres CAPES">Statut des livres CAPES.</canvas></div>
-  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartArticlesRepId}" role="img" aria-label="Répartition des articles CAPES par label">Répartition des articles CAPES par label.</canvas></div>
-  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartArticlesStatusId}" role="img" aria-label="Statut des articles CAPES">Statut des articles CAPES.</canvas></div>
-  <div class="stitle">Bibliothèque — CAPES (${allCapesBooks.length})</div>${capesList}
-  <div class="stitle">Articles — CAPES (${allCapesArticles.length})</div>
-  ${allCapesArticles.length?allCapesArticles.map(a=>`<div class="book-item"><div class="book-title">${a.title}</div><div class="book-meta">${a.author||'—'}${a.source?' · '+a.source:''}</div><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:3px"><span class="book-badge badge-capes">article</span>${a.label?`<span class="book-badge ${CAPES_BADGE_CLASSES[a.label]||'badge-capes'}">${a.label}</span>`:''}<span style="font-size:11px;color:var(--text3)">${a.status}</span>${a.note?`<span style="font-size:11px;color:var(--text2)">— ${a.note}</span>`:''}</div></div>`).join(''):'<div style="font-size:13px;color:var(--text3)">Aucun article CAPES renseigné.</div>'}
-
-  <div class="stitle">Corrélations réelles J<span class="stitle-badge">Pearson · ${allEntriesAll.length} jours</span></div>
-  ${corrHtml||'<div style="font-size:13px;color:var(--text3)">Pas assez de données.</div>'}
-  <div class="stitle">Corrélations decalees <span class="stitle-badge">effets J+1 · J+2</span></div>
-  <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Ce qui d'hier prédit ton humeur ou ton énergie d'aujourd'hui.</div>
-  ${[lagCorrRow('Sport J → humeur J+1',lagSportMood1),lagCorrRow('Sport J → humeur J+2',lagSportMood2),lagCorrRow('Sommeil J → énergie J+1',lagSleepEnergy1),lagCorrRow('Sommeil J → humeur J+1',lagSleepMood1),lagCorrRow('Stress travail J → humeur J+1',lagStressMood1)].filter(Boolean).join('')||'<div style="font-size:13px;color:var(--text3)">Pas assez de données.</div>'}
-  ${corrNote}
-
-  <div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap">
-    <button onclick="exportJSON()" style="font-size:12px;padding:6px 13px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">Exporter JSON</button>
-    <button onclick="exportCSV()" style="font-size:12px;padding:6px 13px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">Exporter CSV</button>
-    <button onclick="importJSON()" style="font-size:12px;padding:6px 13px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">Importer JSON</button>
-    <button onclick="syncFromDropbox()" style="font-size:12px;padding:6px 13px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">Charger Dropbox</button>
-  </div>`;
-
-  renderHealthChart();
-
-  /* ── Rolling 7j chart ── */
-  if(rollingData.length>=5){
-    const rc=document.getElementById(rollingId);
-    if(rc){
-      new Chart(rc,{type:'line',data:{labels:rollingLabels,datasets:[{data:rollingData,borderColor:'#185fa5',backgroundColor:'#e6f1fb55',fill:true,tension:0.4,pointRadius:2,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Humeur moy: ${ctx.parsed.y}/6`}}},scales:{x:{ticks:{font:{size:10},autoSkip:true,maxTicksLimit:12}},y:{min:1,max:6,ticks:{font:{size:10},stepSize:1,callback:v=>['','Très basse','Basse','Neutre','Bonne','Très bonne','Agitation'][v]||v}}}}});
-    }
-  }
-
-  /* ── Jour de la semaine radar ── */
-  const dc=document.getElementById(dowRadarId);
-  if(dc){
-    new Chart(dc,{type:'bar',data:{labels:dowLabels,datasets:[
-      {label:'Humeur moy (×2)',data:dowMoodAvg.map(v=>v?v*2:null),backgroundColor:'#e24b4a55',borderColor:'#e24b4a',borderWidth:1.5},
-      {label:'Énergie moy',data:dowEnergyAvg,backgroundColor:'#185fa555',borderColor:'#185fa5',borderWidth:1.5},
-      {label:'Jours écriture',data:dowWrite,backgroundColor:'#7f77dd55',borderColor:'#7f77dd',borderWidth:1.5}
-    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:ctx=>{if(ctx.datasetIndex===0)return `Humeur: ${ctx.parsed.y?Math.round(ctx.parsed.y/2*10)/10:'-'}/6`;if(ctx.datasetIndex===1)return `Énergie: ${ctx.parsed.y||'-'}/10`;return `Écriture: ${ctx.parsed.y} jour(s)`;}}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:10}}}}}});
-  }
-
-  const tCanvas=document.getElementById(timeId);
   function corrPair(fnX,fnY){
     const xs=allEntriesAll.map(([,d])=>fnX(d));
     const ys=allEntriesAll.map(([,d])=>fnY(d));
@@ -2363,10 +2200,29 @@ const healthChartId='health-chart';
   </div>`;
 
   renderHealthChart();
-  const tCanvas2 = document.getElementById(timeId);
-  if (tCanvas2 && totalTravailMin > 0) {
-    if (timeChart) timeChart.destroy();
-    timeChart = new Chart(tCanvas2, {
+
+  /* ── Rolling 7j chart ── */
+  if(rollingData.length>=5){
+    const rc=document.getElementById(rollingId);
+    if(rc){
+      new Chart(rc,{type:'line',data:{labels:rollingLabels,datasets:[{data:rollingData,borderColor:'#185fa5',backgroundColor:'#e6f1fb55',fill:true,tension:0.4,pointRadius:2,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Humeur moy: ${ctx.parsed.y}/6`}}},scales:{x:{ticks:{font:{size:10},autoSkip:true,maxTicksLimit:12}},y:{min:1,max:6,ticks:{font:{size:10},stepSize:1,callback:v=>['','Très basse','Basse','Neutre','Bonne','Très bonne','Agitation'][v]||v}}}}});
+    }
+  }
+
+  /* ── Jour de la semaine radar ── */
+  const dc=document.getElementById(dowRadarId);
+  if(dc){
+    new Chart(dc,{type:'bar',data:{labels:dowLabels,datasets:[
+      {label:'Humeur moy (×2)',data:dowMoodAvg.map(v=>v?v*2:null),backgroundColor:'#e24b4a55',borderColor:'#e24b4a',borderWidth:1.5},
+      {label:'Énergie moy',data:dowEnergyAvg,backgroundColor:'#185fa555',borderColor:'#185fa5',borderWidth:1.5},
+      {label:'Jours écriture',data:dowWrite,backgroundColor:'#7f77dd55',borderColor:'#7f77dd',borderWidth:1.5}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:ctx=>{if(ctx.datasetIndex===0)return 'Humeur: '+(ctx.parsed.y?Math.round(ctx.parsed.y/2*10)/10:'-')+'/6';if(ctx.datasetIndex===1)return 'Énergie: '+(ctx.parsed.y||'-')+'/10';return 'Écriture: '+ctx.parsed.y+' jour(s)';}}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:10}}}}}});
+  }
+
+  const tCanvas=document.getElementById(timeId);
+  if(tCanvas&&totalTravailMin>0){
+    if(timeChart){timeChart.destroy();}
+    timeChart=new Chart(tCanvas,{
       type:'doughnut',
       data:{labels:TRAVAIL_TODOS.map(t=>t.label),datasets:[{data:TRAVAIL_TODOS.map(t=>travailMinByTask[t.key]||0),backgroundColor:['#D85A30','#185FA5','#1D9E75','#7F77DD'],borderWidth:0}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:10}},tooltip:{callbacks:{label:ctx=>{const min=ctx.parsed;const h=Math.floor(min/60);const m=min%60;return `${ctx.label}: ${h>0?h+'h':''}${m}min`;}}}}}
