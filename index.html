@@ -1076,10 +1076,11 @@ function buildMuscu(d,k){
     <div class="fl" style="margin-top:8px"><div class="lbl">Durée totale (min)</div><input type="text" value="${(d.sportData&&d.sportData.renforcement&&d.sportData.renforcement['durée (min)'])||''}" data-sport="renforcement" data-field="durée (min)" oninput="updSportF('${k}',this)"></div></div>`;
 }
 
-/* ── Écriture (Roman + Poésie) ── */
+/* ── Écriture (Roman + Poésie + Recherche) ── */
 function secEcriture(d,k){
-  const ec=d.ecriture||{roman:{},poesie:{}};
+  const ec=d.ecriture||{roman:{},poesie:{},recherche:{roman:[],poesie:[]}};
   const r=ec.roman||{},p=ec.poesie||{};
+  const rech=ec.recherche||{roman:[],poesie:[]};
   const activeTab=d._ecritureTab||'roman';
   return `<div class="section">
   <div class="sec-head" onclick="toggleSec(this)"><span class="sec-title">Écriture</span><span class="sec-arrow">▼</span></div>
@@ -1087,6 +1088,7 @@ function secEcriture(d,k){
     <div class="sec-tabs">
       <button class="sec-tab${activeTab==='roman'?' active':''}" onclick="switchEcritureTab('${k}','roman',this)">Roman</button>
       <button class="sec-tab${activeTab==='poesie'?' active':''}" onclick="switchEcritureTab('${k}','poesie',this)">Poésie</button>
+      <button class="sec-tab${activeTab==='recherche'?' active':''}" onclick="switchEcritureTab('${k}','recherche',this)">Recherche</button>
     </div>
     <div id="ec-roman-${k}" style="display:${activeTab==='roman'?'flex':'none'};flex-direction:column;gap:9px">
       <div class="three">
@@ -1106,15 +1108,79 @@ function secEcriture(d,k){
       <div class="fl"><div class="lbl">Forme(s) travaillée(s)</div><input type="text" id="ec-p-forme-${k}" placeholder="sonnet, haïku, vers libre..." value="${p.forme||''}" oninput="updEc('${k}','poesie','forme',this.value)"></div>
       <div class="fl"><div class="lbl">Notes</div><textarea id="ec-p-note-${k}" placeholder="Thèmes, images, blocages...">${p.note||''}</textarea></div>
     </div>
+    <div id="ec-recherche-${k}" style="display:${activeTab==='recherche'?'flex':'none'};flex-direction:column;gap:9px">
+      <div class="sec-tabs" style="margin-bottom:6px">
+        <button class="sec-tab${(d._echTab||'r-roman')==='r-roman'?' active':''}" onclick="switchEchTab('${k}','r-roman',this)">Pour le roman</button>
+        <button class="sec-tab${(d._echTab||'r-roman')==='r-poesie'?' active':''}" onclick="switchEchTab('${k}','r-poesie',this)">Pour la poésie</button>
+      </div>
+      <div id="ech-roman-${k}" style="display:${(d._echTab||'r-roman')==='r-roman'?'flex':'none'};flex-direction:column;gap:7px">
+        ${buildRechercheList(rech.roman||[],k,'roman')}
+      </div>
+      <div id="ech-poesie-${k}" style="display:${(d._echTab||'r-roman')==='r-poesie'?'flex':'none'};flex-direction:column;gap:7px">
+        ${buildRechercheList(rech.poesie||[],k,'poesie')}
+      </div>
+    </div>
   </div></div>`;
+}
+
+function buildRechercheList(items,k,type){
+  const rows=items.map((b,i)=>`
+    <div class="add-item">
+      <div class="add-item-header">
+        <span style="font-size:12px;font-weight:500">${b.title||'Lecture'}</span>
+        <button class="rm-btn" onclick="removeRecherche('${k}','${type}',${i})">×</button>
+      </div>
+      <div class="fl"><div class="lbl">Titre</div><input type="text" value="${b.title||''}" data-ri="${i}" data-rtype="${type}" data-rf="title" oninput="updRecherche('${k}',this)"></div>
+      <div class="fl"><div class="lbl">Auteur</div><input type="text" value="${b.author||''}" data-ri="${i}" data-rtype="${type}" data-rf="author" oninput="updRecherche('${k}',this)"></div>
+      <div class="two">
+        <div class="fl"><div class="lbl">Genre / champ</div><input type="text" value="${b.genre||''}" placeholder="roman, essai, poésie..." data-ri="${i}" data-rtype="${type}" data-rf="genre" oninput="updRecherche('${k}',this)"></div>
+        <div class="fl"><div class="lbl">Statut</div><select data-ri="${i}" data-rtype="${type}" data-rf="status" onchange="updRecherche('${k}',this)">
+          <option value="à lire"${b.status==='à lire'?' selected':''}>À lire</option>
+          <option value="en cours"${b.status==='en cours'?' selected':''}>En cours</option>
+          <option value="terminé"${b.status==='terminé'?' selected':''}>Terminé</option>
+        </select></div>
+      </div>
+      <div class="fl"><div class="lbl">Ce que j'y cherche</div><input type="text" value="${b.intent||''}" placeholder="inspiration, documentation, forme..." data-ri="${i}" data-rtype="${type}" data-rf="intent" oninput="updRecherche('${k}',this)"></div>
+      <div class="fl"><div class="lbl">Note</div><input type="text" value="${b.note||''}" placeholder="observation, citation, idée..." data-ri="${i}" data-rtype="${type}" data-rf="note" oninput="updRecherche('${k}',this)"></div>
+    </div>`).join('');
+  return rows+`<button class="add-btn" onclick="addRecherche('${k}','${type}')">+ Ajouter une lecture</button>`;
+}
+
+function switchEchTab(k,tab,btn){
+  initDay(k)._echTab=tab;
+  btn.closest('.sec-tabs').querySelectorAll('.sec-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  document.getElementById('ech-roman-'+k).style.display=tab==='r-roman'?'flex':'none';
+  document.getElementById('ech-poesie-'+k).style.display=tab==='r-poesie'?'flex':'none';
+}
+function addRecherche(k,type){
+  const day=initDay(k);day.ecriture=day.ecriture||{roman:{},poesie:{},recherche:{roman:[],poesie:[]}};
+  day.ecriture.recherche=day.ecriture.recherche||{roman:[],poesie:[]};
+  day.ecriture.recherche[type]=day.ecriture.recherche[type]||[];
+  day.ecriture.recherche[type].push({title:'',author:'',genre:'',status:'en cours',intent:'',note:''});
+  rebuildSheet(k);
+}
+function removeRecherche(k,type,i){
+  const day=initDay(k);
+  if(day.ecriture?.recherche?.[type])day.ecriture.recherche[type].splice(i,1);
+  rebuildSheet(k);
+}
+function updRecherche(k,input){
+  const day=initDay(k);day.ecriture=day.ecriture||{roman:{},poesie:{},recherche:{roman:[],poesie:[]}};
+  day.ecriture.recherche=day.ecriture.recherche||{roman:[],poesie:[]};
+  const i=+input.dataset.ri,type=input.dataset.rtype,f=input.dataset.rf;
+  day.ecriture.recherche[type]=day.ecriture.recherche[type]||[];
+  day.ecriture.recherche[type][i]=day.ecriture.recherche[type][i]||{};
+  day.ecriture.recherche[type][i][f]=input.tagName==='SELECT'?input.options[input.selectedIndex].value:input.value;
 }
 function switchEcritureTab(k,tab,btn){
   initDay(k)._ecritureTab=tab;
   btn.closest('.sec-tabs').querySelectorAll('.sec-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
   document.getElementById('ec-roman-'+k).style.display=tab==='roman'?'flex':'none';
   document.getElementById('ec-poesie-'+k).style.display=tab==='poesie'?'flex':'none';
+  const rechEl=document.getElementById('ec-recherche-'+k);
+  if(rechEl)rechEl.style.display=tab==='recherche'?'flex':'none';
 }
-function updEc(k,type,field,val){const day=initDay(k);day.ecriture=day.ecriture||{roman:{},poesie:{}};day.ecriture[type]=day.ecriture[type]||{};day.ecriture[type][field]=val;}
+function updEc(k,type,field,val){const day=initDay(k);day.ecriture=day.ecriture||{roman:{},poesie:{},recherche:{roman:[],poesie:[]}};day.ecriture[type]=day.ecriture[type]||{};day.ecriture[type][field]=val;}
 
 /* ── CAPES ── */
 function secCapes(d,k){
@@ -1553,27 +1619,108 @@ function saveDay(k){
 }
 
 /* ════════════════════════════════════════════════
-   PROJETS
+   OBJECTIFS & PROJETS
    ════════════════════════════════════════════════ */
+function getObjectives(){return DATA.__objectives||[];}
+function setObjectives(arr){DATA.__objectives=arr;saveData();}
+
+const OBJ_TYPES=[
+  {key:'poids',label:'Poids cible',unit:'kg',icon:'⚖️',tracker:d=>d.weight||null,dir:-1},
+  {key:'fiches',label:'Fiches CAPES',unit:'fiches',icon:'📝',tracker:d=>null,dir:1},
+  {key:'livres_capes',label:'Livres CAPES',unit:'livres',icon:'📚',tracker:d=>null,dir:1},
+  {key:'articles_capes',label:'Articles CAPES',unit:'articles',icon:'📰',tracker:d=>null,dir:1},
+  {key:'roman_mots',label:'Mots roman',unit:'mots',icon:'✍️',tracker:d=>(d.ecriture?.roman?.mots||0)||null,dir:1},
+  {key:'poesie_nb',label:'Nombre de poèmes',unit:'poèmes',icon:'🖊️',tracker:d=>(d.ecriture?.poesie?.poemes||0)||null,dir:1},
+];
+
+function getCumulativeValue(key){
+  const allEntries=Object.entries(DATA).filter(([k])=>k.match(/^\d{4}-\d{2}-\d{2}$/)).sort(([a],[b])=>a.localeCompare(b));
+  if(key==='poids'){const last=allEntries.filter(([,d])=>d.weight).pop();return last?last[1].weight:null;}
+  if(key==='roman_mots'){return allEntries.reduce((a,[,d])=>a+(d.ecriture?.roman?.mots||0),0);}
+  if(key==='poesie_nb'){return allEntries.reduce((a,[,d])=>a+(d.ecriture?.poesie?.poemes||0),0);}
+  if(key==='fiches'){return allEntries.reduce((a,[,d])=>a+(d.capesFichesList?.length||0),0);}
+  if(key==='livres_capes'){const seen=new Set();allEntries.forEach(([,d])=>(d.capesBooksList||[]).forEach(b=>{if(b.title)seen.add(b.title);}));return seen.size;}
+  if(key==='articles_capes'){const seen=new Set();allEntries.forEach(([,d])=>(d.capesArticlesList||[]).forEach(a=>{if(a.title)seen.add(a.title);}));return seen.size;}
+  return null;
+}
+
 function renderProjets(){
   const projects=getProjects();
+  const objectives=getObjectives();
   const active=projects.filter(p=>!p.closed);
   const closed=projects.filter(p=>p.closed);
   const el=document.getElementById('projets-content');
 
-  let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <div style="font-size:13px;font-weight:500">${active.length} projet${active.length!==1?'s':''} en cours</div>
+  /* ── Section objectifs ── */
+  let objHtml=`<div class="stitle">Objectifs <span class="stitle-badge">${objectives.length} définis</span></div>`;
+  objHtml+=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">`;
+  OBJ_TYPES.forEach(ot=>{
+    const existing=objectives.find(o=>o.key===ot.key);
+    if(!existing){
+      objHtml+=`<button onclick="addObjective('${ot.key}')" style="font-size:12px;padding:5px 11px;border:0.5px dashed var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text2);font-family:'DM Sans',sans-serif">${ot.icon} ${ot.label}</button>`;
+    }
+  });
+  objHtml+=`</div>`;
+
+  objectives.forEach((obj,oi)=>{
+    const ot=OBJ_TYPES.find(t=>t.key===obj.key)||{label:obj.key,unit:'',icon:'🎯',dir:1};
+    const cur=getCumulativeValue(obj.key);
+    const target=obj.target;
+    const pct=target&&cur!==null?Math.min(100,Math.round((ot.dir>0?cur/target:((target*2-cur)/target))*100)):null;
+    const daysLeft=obj.deadline?Math.round((new Date(obj.deadline)-now)/86400000):null;
+    const needed=target&&cur!==null&&daysLeft>0?(ot.dir>0?(target-cur)/daysLeft:null):null;
+
+    objHtml+=`<div class="project-card active-proj" style="margin-bottom:8px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
+        <div><div class="proj-title">${ot.icon} ${ot.label}</div>
+          <div class="proj-meta">Objectif : <strong>${target||'?'} ${ot.unit}</strong>${obj.deadline?' · Deadline : '+obj.deadline:''}</div>
+        </div>
+        <button class="rm-btn" onclick="removeObjective(${oi})" style="font-size:16px;color:var(--text3)">×</button>
+      </div>
+      ${cur!==null?`<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+        <span style="color:var(--text2)">Actuel : <strong style="color:var(--text)">${cur} ${ot.unit}</strong></span>
+        ${pct!==null?`<span style="color:${pct>=100?'#1d9e75':pct>=60?'#639922':pct>=30?'#ba7517':'#e24b4a'};font-weight:500">${pct}%</span>`:''}
+      </div>
+      ${pct!==null?`<div class="progress-bar"><div class="progress-fill" style="background:${pct>=100?'#1d9e75':pct>=60?'#639922':pct>=30?'#ba7517':'#e24b4a'};width:${pct}%"></div></div>`:''}
+      ${needed!==null?`<div style="font-size:11px;color:var(--text2);margin-top:4px">Rythme nécessaire : <strong>${Math.ceil(needed*10)/10} ${ot.unit}/jour</strong> (${daysLeft}j restants)</div>`:''}
+      ${daysLeft===0?`<div style="font-size:12px;color:#e24b4a;margin-top:4px">⚠️ Deadline aujourd'hui !</div>`:''}
+      ${daysLeft<0?`<div style="font-size:12px;color:#e24b4a;margin-top:4px">⚠️ Deadline dépassée de ${Math.abs(daysLeft)}j</div>`:''}
+      `:'<div style="font-size:12px;color:var(--text3)">Pas encore de données.</div>'}
+      <div class="two" style="margin-top:8px">
+        <div class="fl"><div class="lbl">Objectif (${ot.unit})</div><input type="number" min="0" value="${obj.target||''}" placeholder="ex: 100" oninput="updateObjective(${oi},'target',+this.value||null)"></div>
+        <div class="fl"><div class="lbl">Deadline</div><input type="date" value="${obj.deadline||''}" oninput="updateObjective(${oi},'deadline',this.value)"></div>
+      </div>
+      <div class="fl" style="margin-top:6px"><div class="lbl">Note</div><input type="text" value="${obj.note||''}" placeholder="contexte, motivation..." oninput="updateObjective(${oi},'note',this.value)"></div>
+    </div>`;
+  });
+
+  /* ── Section projets ── */
+  let projHtml=`<div class="stitle" style="margin-top:16px">Projets <span class="stitle-badge">${active.length} en cours</span></div>`;
+  projHtml+=`<div style="display:flex;justify-content:flex-end;margin-bottom:10px">
     <button onclick="addProject()" style="font-size:12px;padding:6px 14px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">+ Nouveau projet</button>
   </div>`;
 
-  if(!projects.length){html+=`<div style="font-size:13px;color:var(--text3);padding:20px 0;text-align:center">Aucun projet. Lance-toi.</div>`;}
-
-  active.forEach((p,i)=>{html+=renderProjectCard(p,i,false);});
+  if(!projects.length){projHtml+=`<div style="font-size:13px;color:var(--text3);padding:10px 0">Aucun projet. Lance-toi.</div>`;}
+  active.forEach((p,i)=>{projHtml+=renderProjectCard(p,i,false);});
   if(closed.length){
-    html+=`<div class="stitle" style="margin-top:16px">Projets terminés (${closed.length})</div>`;
-    closed.forEach((p,ri)=>{html+=renderProjectCard(p,projects.indexOf(p),true);});
+    projHtml+=`<div class="stitle" style="margin-top:16px">Projets terminés (${closed.length})</div>`;
+    closed.forEach((p)=>{projHtml+=renderProjectCard(p,projects.indexOf(p),true);});
   }
-  el.innerHTML=html;
+
+  el.innerHTML=objHtml+projHtml;
+}
+
+function addObjective(key){
+  const objectives=getObjectives();
+  if(objectives.find(o=>o.key===key))return;
+  objectives.push({key,target:null,deadline:'',note:''});
+  setObjectives(objectives);renderProjets();
+}
+function removeObjective(i){
+  const objectives=getObjectives();objectives.splice(i,1);setObjectives(objectives);renderProjets();
+}
+function updateObjective(i,field,val){
+  const objectives=getObjectives();objectives[i]=objectives[i]||{};objectives[i][field]=val;setObjectives(objectives);
 }
 
 function renderProjectCard(p,idx,isClosed){
@@ -2091,6 +2238,148 @@ const healthChartId='health-chart';
   /* ── Badges hebdomadaires (reset chaque semaine) ── */
   const weeklyBadgesHtml=renderWeeklyBadges(weekAllDays);
 
+  /* ── ALERTES INTELLIGENTES ── */
+  const smartAlerts=[];
+  const todayKey=dk(now.getFullYear(),now.getMonth(),now.getDate());
+  const last7=allEntriesAll.slice(-7).map(([,d])=>d);
+  const last14=allEntriesAll.slice(-14).map(([,d])=>d);
+  const last30=allEntriesAll.slice(-30).map(([,d])=>d);
+
+  /* Sport */
+  const sportDaysLast7=last7.filter(d=>d.sport&&d.sport.length).length;
+  if(sportDaysLast7===0&&last7.length>=3)smartAlerts.push({level:'warn',msg:'Aucune séance de sport renseignée cette semaine.'});
+  else{let streak=0;for(let i=allEntriesAll.length-1;i>=0;i--){if(allEntriesAll[i][1].sport?.length)break;streak++;}if(streak>=3)smartAlerts.push({level:'warn',msg:streak+' jours sans sport.'});}
+
+  /* Énergie */
+  const energyLast5=allEntriesAll.slice(-5).map(([,d])=>d.energy).filter(Boolean);
+  if(energyLast5.length>=4){const slope=(energyLast5[energyLast5.length-1]-energyLast5[0])/(energyLast5.length-1);if(slope<-0.5)smartAlerts.push({level:'warn',msg:'Énergie en baisse progressive sur 5 jours.'});}
+
+  /* Humeur */
+  const moodLast5=allEntriesAll.slice(-5).map(([,d])=>d.mood).filter(Boolean);
+  const lowMoodStreak=moodLast5.filter(m=>m==='vl'||m==='l').length;
+  if(lowMoodStreak>=3)smartAlerts.push({level:'alert',msg:lowMoodStreak+' jours consécutifs avec humeur basse ou très basse.'});
+  const highMoodStreak=moodLast5.filter(m=>m==='h').length;
+  if(highMoodStreak>=3)smartAlerts.push({level:'alert',msg:highMoodStreak+' jours avec agitation/hypomanie détectée.'});
+
+  /* Teralite */
+  const missedMedLast7=last7.filter(d=>d.medStatus==='oublie'||d.medStatus==='oublié').length;
+  const decaleMedLast7=last7.filter(d=>d.medStatus==='decale'||d.medStatus==='décalé').length;
+  if(missedMedLast7>=2)smartAlerts.push({level:'alert',msg:missedMedLast7+' prises de Teralite manquées cette semaine.'});
+  if(decaleMedLast7>=3)smartAlerts.push({level:'warn',msg:decaleMedLast7+' prises de Teralite décalées cette semaine.'});
+
+  /* CAPES */
+  const capesLast7=last7.filter(d=>d.capesFichesList?.length||d.capesNote||d.entrains?.length).length;
+  const capesLast14=last14.filter(d=>d.capesFichesList?.length||d.capesNote).length;
+  if(capesLast7===0&&last7.length>=5)smartAlerts.push({level:'warn',msg:'Aucun travail CAPES renseigné cette semaine.'});
+  /* rythme vs objectif */
+  const objectives=getObjectives();
+  objectives.forEach(obj=>{
+    if(!obj.target||!obj.deadline)return;
+    const cur=getCumulativeValue(obj.key);if(cur===null)return;
+    const ot=OBJ_TYPES.find(t=>t.key===obj.key);if(!ot)return;
+    const daysLeft=Math.round((new Date(obj.deadline)-now)/86400000);
+    if(daysLeft<=0)return;
+    const needed=(obj.target-cur)/daysLeft;
+    /* compute actual 14-day rate */
+    let rate14=0;
+    if(obj.key==='roman_mots')rate14=last14.reduce((a,d)=>a+(d.ecriture?.roman?.mots||0),0)/14;
+    else if(obj.key==='fiches')rate14=last14.reduce((a,d)=>a+(d.capesFichesList?.length||0),0)/14;
+    else if(obj.key==='poesie_nb')rate14=last14.reduce((a,d)=>a+(d.ecriture?.poesie?.poemes||0),0)/14;
+    if(rate14>0&&needed>rate14*1.3)smartAlerts.push({level:'warn',msg:'Rythme insuffisant pour "'+ot.label+'" : besoin de '+Math.ceil(needed*10)/10+' '+ot.unit+'/jour, rythme actuel '+Math.round(rate14*10)/10+'.'});
+  });
+
+  /* Écriture */
+  const writeLastDays=last7.filter(d=>d.ecriture?.roman?.mots||d.ecriture?.poesie?.mots).length;
+  if(writeLastDays===0&&last7.length>=5)smartAlerts.push({level:'info',msg:'Aucune écriture renseignée cette semaine.'});
+
+  /* Stress */
+  const avgStressT7=last7.filter(d=>d.stressTravail).length?last7.filter(d=>d.stressTravail).reduce((a,d)=>a+d.stressTravail,0)/last7.filter(d=>d.stressTravail).length:0;
+  if(avgStressT7>=4)smartAlerts.push({level:'alert',msg:'Stress travail élevé en moyenne cette semaine ('+avgStressT7.toFixed(1)+'/5).'});
+
+  /* Coca */
+  const cocaDays7=last7.filter(d=>d.coca||d.cocaMl>0).length;
+  if(cocaDays7>=5)smartAlerts.push({level:'info',msg:cocaDays7+' jours avec coca cette semaine.'});
+
+  /* Sommeil */
+  const sleepVals7=last7.map(d=>sleepHoursForStats(d)).filter(Boolean);
+  if(sleepVals7.length>=3){const avg=sleepVals7.reduce((a,v)=>a+v,0)/sleepVals7.length;if(avg<6)smartAlerts.push({level:'alert',msg:'Sommeil moyen très bas cette semaine ('+avg.toFixed(1)+'h).'});}
+
+  const alertColors={alert:'#e24b4a',warn:'#ba7517',info:'#185fa5'};
+  const alertIcons={alert:'⚠️',warn:'⚠️',info:'ℹ️'};
+  const alertBgs={alert:'#fcebeb',warn:'#faeeda',info:'#e6f1fb'};
+  const alertHtml=smartAlerts.length?smartAlerts.map(a=>`<div style="border:0.5px solid ${alertColors[a.level]}33;background:${alertBgs[a.level]};border-radius:var(--r);padding:8px 12px;font-size:13px;color:${alertColors[a.level]};margin-bottom:5px">${alertIcons[a.level]} ${a.msg}</div>`).join(''):`<div style="font-size:13px;color:var(--text3);padding:4px 0">Aucune alerte — continue comme ça.</div>`;
+
+  /* ── MÉTA-BADGES ── */
+  function checkMetaBadge(name){
+    const sorted=allEntriesAll;
+    if(name==='rebond'){
+      for(let i=3;i<sorted.length;i++){
+        const bad3=sorted.slice(i-3,i).every(([,d])=>d.mood==='vl'||d.mood==='l'||d.quality<=2);
+        const good3=sorted.slice(i,i+3).every(([,d])=>d.mood==='g'||d.mood==='vg'||d.quality>=4);
+        if(bad3&&good3)return true;
+      }return false;
+    }
+    if(name==='regularite'){
+      const enVals=sorted.map(([,d])=>d.energy).filter(Boolean);
+      if(enVals.length<7)return false;
+      const mean=enVals.reduce((a,v)=>a+v,0)/enVals.length;
+      const std=Math.sqrt(enVals.reduce((a,v)=>a+(v-mean)**2,0)/enVals.length);
+      return std<1.5;
+    }
+    if(name==='discipline'){
+      return sorted.slice(-7).filter(([,d])=>d.medStatus==='pris'&&sleepHoursForStats(d)>=6&&d.fixedTodos&&Object.values(d.fixedTodos).filter(t=>t.done).length>=2).length>=5;
+    }
+    return false;
+  }
+  const metaBadges=[
+    {id:'rebond',icon:'🌱',name:'Rebond',desc:'3 mauvais jours suivis de 3 bons',ok:checkMetaBadge('rebond')},
+    {id:'regularite',icon:'📏',name:'Régularité',desc:'Variance énergie faible sur l\'ensemble',ok:checkMetaBadge('regularite')},
+    {id:'discipline',icon:'🧘',name:'Discipline invisible',desc:'Médoc + sommeil + tâches — 5j/7',ok:checkMetaBadge('discipline')},
+  ];
+
+  /* ── PROFIL DE SEMAINE ── */
+  function computeWeekProfile(days){
+    if(!days.length)return null;
+    const sportD=days.filter(d=>d.sport&&d.sport.length).length;
+    const writeD=days.filter(d=>d.ecriture?.roman?.mots||d.ecriture?.poesie?.mots).length;
+    const stressVals=days.filter(d=>d.stressTravail).map(d=>d.stressTravail);
+    const avgStress=stressVals.length?stressVals.reduce((a,v)=>a+v,0)/stressVals.length:0;
+    const energyVals=days.filter(d=>d.energy).map(d=>d.energy);
+    const avgEnergy=energyVals.length?energyVals.reduce((a,v)=>a+v,0)/energyVals.length:0;
+    const energyStd=energyVals.length>=3?Math.sqrt(energyVals.reduce((a,v)=>a+(v-avgEnergy)**2,0)/energyVals.length):5;
+    const intensity=(sportD>=3?1:0)+(writeD>=3?1:0)+(days.filter(d=>d.capesFichesList?.length).length>=2?1:0);
+    const stability=energyStd<1.5?'stable':'instable';
+    if(intensity>=2&&stability==='stable')return{type:'Productif et stable',color:'#1d9e75',emoji:'🎯',desc:'Tu as produit sur plusieurs fronts avec une énergie régulière. Semaine de référence.'};
+    if(intensity>=2&&stability==='instable')return{type:'Productif mais instable',color:'#ba7517',emoji:'⚡',desc:'Beaucoup produit, mais avec des hauts et des bas. Attention à l\'épuisement.'};
+    if(intensity===1&&stability==='stable')return{type:'Stable mais peu intense',color:'#185fa5',emoji:'🌊',desc:'Bonne régularité, mais peu d\'output sur l\'ensemble des domaines. Semaine de maintien.'};
+    if(avgStress>=3.5)return{type:'Chaotique sous pression',color:'#e24b4a',emoji:'🌀',desc:'Stress élevé, énergie variable. La charge est là mais le flow pas encore.'};
+    return{type:'Semaine de récupération',color:'#888780',emoji:'🛌',desc:'Peu d\'output, énergie modérée. Peut être nécessaire. Observe si ça dure.'};
+  }
+  const weekProfile=computeWeekProfile(weekAllDays);
+
+  /* ── RÉPARTITION DU TEMPS ── */
+  function computeTimeBreakdown(days){
+    let sport=0,ecriture=0,travail=0,domestic=0,capes=0;
+    days.forEach(d=>{
+      /* sport */
+      if(d.sportData)Object.values(d.sportData).forEach(sd=>{sport+=parseSportNumber(sd['durée (min)']||0);});
+      /* écriture — on estime 1 mot = 1 min/250 (environ 250 mots/heure) */
+      const mots=(d.ecriture?.roman?.mots||0)+(d.ecriture?.poesie?.mots||0);
+      ecriture+=Math.round(mots/250*60);
+      /* travail */
+      if(d.travailTodos)TRAVAIL_TODOS.forEach(t=>{travail+=(d.travailTodos[t.key]?.minutes||0);});
+      /* domestique — 30min si au moins 1 todo coché */
+      if(d.fixedTodos&&Object.values(d.fixedTodos).some(t=>t.done))domestic+=30;
+      /* CAPES — 45min par fiche, 20min par entraîn */
+      capes+=(d.capesFichesList?.length||0)*45+(d.entrains?.length||0)*20;
+    });
+    return{sport,ecriture,travail,domestic,capes};
+  }
+  const timeBreakdown=computeTimeBreakdown(allDays);
+  const totalTimeMin=Object.values(timeBreakdown).reduce((a,v)=>a+v,0);
+  const timePct=totalTimeMin>0?Object.fromEntries(Object.entries(timeBreakdown).map(([k,v])=>[k,Math.round(v/totalTimeMin*100)])):null;
+  const timeChartId='chart-time-pie-'+Date.now();
+
 
   function corrPair(fnX,fnY){
     const xs=allEntriesAll.map(([,d])=>fnX(d));
@@ -2218,9 +2507,64 @@ const healthChartId='health-chart';
   document.getElementById('stat-content').innerHTML=`
   <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Période : ${label} · ${allDays.length} jour${allDays.length!==1?'s':''} renseigné${allDays.length!==1?'s':''}</div>
 
+  <div class="stitle">Alertes intelligentes <span class="stitle-badge">${smartAlerts.length} alerte${smartAlerts.length!==1?'s':''}</span></div>
+  ${alertHtml}
+
+  <div class="stitle">Objectifs en cours <span class="stitle-badge">trajectoire</span></div>
+  ${objectives.length?objectives.map(obj=>{
+    const ot=OBJ_TYPES.find(t=>t.key===obj.key)||{label:obj.key,unit:'',icon:'🎯',dir:1};
+    const cur=getCumulativeValue(obj.key);if(cur===null||!obj.target)return '';
+    const daysLeft=obj.deadline?Math.round((new Date(obj.deadline)-now)/86400000):null;
+    const pct=Math.min(100,Math.round((ot.dir>0?cur/obj.target:((obj.target*2-cur)/obj.target))*100));
+    const needed=daysLeft>0?(obj.target-cur)/daysLeft:null;
+    let rate7=0;
+    if(obj.key==='roman_mots')rate7=last7.reduce((a,d)=>a+(d.ecriture?.roman?.mots||0),0)/7;
+    else if(obj.key==='fiches')rate7=last7.reduce((a,d)=>a+(d.capesFichesList?.length||0),0)/7;
+    else if(obj.key==='poesie_nb')rate7=last7.reduce((a,d)=>a+(d.ecriture?.poesie?.poemes||0),0)/7;
+    const onTrack=needed!==null&&rate7>0?rate7>=needed*0.8:null;
+    const projDone=needed!==null&&rate7>0?Math.round((obj.target-cur)/rate7):null;
+    return `<div class="xp-card" style="margin-bottom:8px">
+      <div class="xp-header">
+        <span class="xp-title">${ot.icon} ${ot.label}</span>
+        <span class="xp-badge" style="background:${onTrack===true?'#1d9e7522':onTrack===false?'#e24b4a22':'var(--bg2)'};color:${onTrack===true?'#1d9e75':onTrack===false?'#e24b4a':'var(--text2)'}">${onTrack===true?'🟢 En bonne voie':onTrack===false?'🔴 Rythme insuffisant':'⬜ Pas assez de données'}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="background:${pct>=100?'#1d9e75':pct>=60?'#639922':pct>=30?'#ba7517':'#e24b4a'};width:${pct}%"></div></div>
+      <div class="xp-footer">
+        <span>${cur.toLocaleString('fr-FR')} / ${(+obj.target).toLocaleString('fr-FR')} ${ot.unit} <strong>(${pct}%)</strong></span>
+        <span style="color:var(--text2)">${daysLeft!==null?daysLeft+'j restants':''}</span>
+      </div>
+      ${needed!==null?`<div style="font-size:11px;color:var(--text2);margin-top:5px">
+        Nécessaire : <strong>${Math.ceil(needed*10)/10} ${ot.unit}/j</strong> · Rythme actuel (7j) : <strong>${Math.round(rate7*100)/100} ${ot.unit}/j</strong>
+        ${projDone!==null&&projDone>0?` · Projection : <strong>${projDone}j</strong> au rythme actuel`:''}
+      </div>`:''}
+    </div>`;
+  }).filter(Boolean).join(''):`<div style="font-size:13px;color:var(--text3)">Définis tes objectifs dans l'onglet Projets.</div>`}
+
+  <div class="stitle">Profil de semaine <span class="stitle-badge">lecture narrative</span></div>
+  ${weekProfile?`<div class="add-item" style="border-left:3px solid ${weekProfile.color}">
+    <div style="font-size:22px;margin-bottom:4px">${weekProfile.emoji}</div>
+    <div style="font-size:14px;font-weight:500;color:${weekProfile.color};margin-bottom:3px">${weekProfile.type}</div>
+    <div style="font-size:13px;color:var(--text2)">${weekProfile.desc}</div>
+  </div>`:'<div style="font-size:13px;color:var(--text3)">Pas assez de données cette semaine.</div>'}
+
   <div class="stitle">Titre de la semaine <span class="stitle-badge">reset lundi</span></div>
   ${weekTitle}
   ${weeklyBadgesHtml}
+
+  <div class="stitle">Méta-badges <span class="stitle-badge">patterns de comportement</span></div>
+  <div class="badge-grid">
+    ${metaBadges.map(b=>`<div class="badge-card ${b.ok?'unlocked':'locked'}">
+      <div class="badge-icon">${b.icon}</div>
+      <div class="badge-name">${b.name}</div>
+      <div class="badge-crit">${b.desc}</div>
+    </div>`).join('')}
+  </div>
+
+  <div class="stitle">Répartition du temps estimée <span class="stitle-badge">${Math.round(totalTimeMin/60)}h tracées</span></div>
+  ${timePct?`<div class="chart-wrap" style="height:200px;margin-bottom:8px"><canvas id="${timeChartId}" role="img" aria-label="Répartition du temps par domaine">Répartition du temps.</canvas></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-bottom:12px">
+    ${[['sport','Sport','#378ADD'],['ecriture','Écriture','#7f77dd'],['travail','Travail','#D85A30'],['capes','CAPES','#d4537e'],['domestic','Maison','#888780']].map(([k,lbl,col])=>`<div class="sc"><div class="sc-label" style="color:${col}">${lbl}</div><div class="sc-val" style="font-size:16px">${Math.floor(timeBreakdown[k]/60)}h${String(timeBreakdown[k]%60).padStart(2,'0')}</div><div class="sc-sub">${timePct[k]}%</div></div>`).join('')}
+  </div>`:'<div style="font-size:13px;color:var(--text3)">Renseigne des durées pour voir la répartition.</div>'}
 
   <div class="stitle">Suivi santé <span class="stitle-badge">modulable</span></div>
   <div class="add-item" style="margin-bottom:12px">
@@ -2417,6 +2761,17 @@ const healthChartId='health-chart';
   </div>`;
 
   renderHealthChart();
+
+  /* ── Camembert répartition du temps ── */
+  if(timePct&&totalTimeMin>0){
+    const tpCv=document.getElementById(timeChartId);
+    if(tpCv){
+      new Chart(tpCv,{type:'doughnut',data:{
+        labels:['Sport','Écriture','Travail','CAPES','Maison'],
+        datasets:[{data:[timeBreakdown.sport,timeBreakdown.ecriture,timeBreakdown.travail,timeBreakdown.capes,timeBreakdown.domestic],backgroundColor:['#378ADD','#7f77dd','#D85A30','#d4537e','#888780'],borderWidth:0}]
+      },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:10}},tooltip:{callbacks:{label:ctx=>{const min=ctx.parsed;return ctx.label+' : '+Math.floor(min/60)+'h'+String(min%60).padStart(2,'0');}}}}}});
+    }
+  }
 
   /* ── Humeurs dans le temps ── */
   const moodCv=document.getElementById(moodChartId);
