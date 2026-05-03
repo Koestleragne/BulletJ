@@ -1006,15 +1006,38 @@ function secMental(d,k){
     ${stressRow('stressTravail','Stress — Travail (1=nul · 5=intense)',stW)}
     ${stressRow('stressSocial','Stress — Social (1=nul · 5=intense)',stS)}
     <div class="two">
-      <div class="fl"><div class="lbl">Teralite — heure de prise</div><input type="time" id="med-time-${k}" value="${d.medTime||''}"></div>
-      <div class="fl"><div class="lbl">Statut</div><div class="mood-btns" style="margin-top:4px">
-        ${['pris','oublie','decale'].map((s,i)=>{const lbl=['pris','oublié','décalé'][i];return `<button class="mb${d.medStatus===s?' sel-ok':''}" onclick="initDay('${k}').medStatus='${s}';this.closest('.mood-btns').querySelectorAll('.mb').forEach(b=>b.className='mb');this.className='mb sel-ok'">${lbl}</button>`;}).join('')}
-      </div></div>
+      <div class="fl"><div class="lbl">Teralite — heure de prise</div><input type="time" id="med-time-${k}" value="${d.medTime||''}" oninput="updMedTime('${k}',this)"></div>
+      <div class="fl"><div class="lbl">Heure idéale (référence)</div><input type="time" id="med-ideal-${k}" value="${d.medIdealTime||DATA.__teraliteIdealTime||'22:00'}" oninput="initDay('${k}').medIdealTime=this.value;DATA.__teraliteIdealTime=this.value;saveData();updMedTimeDrift('${k}')"></div>
     </div>
+    <div class="lbl" style="margin-top:2px">Écart à l'idéal : <span id="med-drift-${k}" style="font-weight:500">${calcMedDrift(d.medTime,d.medIdealTime||DATA.__teraliteIdealTime||'22:00')}</span></div>
+    <div class="fl"><div class="lbl">Statut</div><div class="mood-btns" style="margin-top:4px">
+        ${['pris','oublie','decale'].map((s,i)=>{const lbl=['pris','oublié','décalé'][i];return `<button class="mb${d.medStatus===s?' sel-ok':''}" onclick="initDay('${k}').medStatus='${s}';this.closest('.mood-btns').querySelectorAll('.mb').forEach(b=>b.className='mb');this.className='mb sel-ok'">${lbl}</button>`;}).join('')}
+    </div></div>
     <div class="fl"><div class="lbl">Note du jour</div><textarea id="mn-${k}" placeholder="Comment tu te sens...">${d.mentalNote||''}</textarea></div>
   </div></div>`;
 }
 function stressLabel(n){return ['','Zen','Léger','Modéré','Élevé','Intense'][n]||'';}
+
+function calcMedDrift(actual,ideal){
+  if(!actual||!ideal)return '—';
+  const toMin=t=>{const[h,m]=t.split(':').map(Number);return h*60+m;};
+  let diff=toMin(actual)-toMin(ideal);
+  if(diff>720)diff-=1440;if(diff<-720)diff+=1440;
+  const abs=Math.abs(diff);
+  const h=Math.floor(abs/60),m=abs%60;
+  const sign=diff>0?'+':diff<0?'-':'';
+  const col=abs<=15?'#1d9e75':abs<=30?'#639922':abs<=60?'#ba7517':'#e24b4a';
+  return `<span style="color:${col}">${sign}${h>0?h+'h':''}${m>0?m+'min':'0min'}</span>`;
+}
+function updMedTime(k,input){
+  initDay(k).medTime=input.value;
+  updMedTimeDrift(k);
+}
+function updMedTimeDrift(k){
+  const day=DATA[k]||{};
+  const driftEl=document.getElementById('med-drift-'+k);
+  if(driftEl) driftEl.innerHTML=calcMedDrift(day.medTime,day.medIdealTime||DATA.__teraliteIdealTime||'22:00');
+}
 
 /* ── Sport & Poids ── */
 function secSport(d,k){
@@ -1225,13 +1248,15 @@ function buildCapesBooksSection(d,k){
 function buildCapesLibraryTabs(d,k){
   const active=d._capesLibTab||'books';
   return `<div class="fl">
-    <div class="lbl">Bibliographie CAPES</div>
+    <div class="lbl">Bibliographie & méthodes CAPES</div>
     <div class="sec-tabs">
       <button class="sec-tab${active==='books'?' active':''}" onclick="switchCapesLibTab('${k}','books',this)">Livres</button>
       <button class="sec-tab${active==='articles'?' active':''}" onclick="switchCapesLibTab('${k}','articles',this)">Articles</button>
+      <button class="sec-tab${active==='methodes'?' active':''}" onclick="switchCapesLibTab('${k}','methodes',this)">Méthodes</button>
     </div>
     <div id="capes-books-${k}" style="display:${active==='books'?'block':'none'}">${buildCapesBooksSection(d,k)}</div>
     <div id="capes-articles-${k}" style="display:${active==='articles'?'block':'none'}">${buildCapesArticlesSection(d,k)}</div>
+    <div id="capes-methodes-${k}" style="display:${active==='methodes'?'block':'none'}">${buildCapesMethodesSection(d,k)}</div>
   </div>`;
 }
 
@@ -1241,6 +1266,8 @@ function switchCapesLibTab(k,tab,btn){
   btn.classList.add('active');
   document.getElementById('capes-books-'+k).style.display=tab==='books'?'block':'none';
   document.getElementById('capes-articles-'+k).style.display=tab==='articles'?'block':'none';
+  const mDiv=document.getElementById('capes-methodes-'+k);
+  if(mDiv)mDiv.style.display=tab==='methodes'?'block':'none';
 }
 
 function buildCapesArticlesSection(d,k){
@@ -1280,6 +1307,65 @@ function addCapesArticle(k){
   day.capesArticlesList.push({title:'',author:'',label:'',status:'en cours',source:'',note:'',locked:false});
   saveData();
   keepCapesOpen(k);
+}
+
+/* ── CAPES Méthodes ── */
+const METHODE_LABELS=['Dissertation','Commentaire de doc','Oral','Leçon','Chronologie','Plan détaillé','Croquis / Schéma','Étude de cas','Autre'];
+
+function buildCapesMethodesSection(d,k){
+  const methodes=d.capesMethodesList||[];
+  const rows=methodes.map((m,i)=>`
+    <div class="add-item">
+      <div class="add-item-header">
+        <span style="font-size:12px;font-weight:500">${m.locked?'🔒 ':''}${m.title||'Méthode CAPES'}</span>
+        <div>
+          <button class="rm-btn" onclick="toggleCapesMethodeLock('${k}',${i})" title="${m.locked?'Déverrouiller':'Verrouiller'}">${m.locked?'🔓':'🔒'}</button>
+          <button class="rm-btn" onclick="removeCapesMethode('${k}',${i})">×</button>
+        </div>
+      </div>
+      <div class="fl"><div class="lbl">Titre / intitulé</div><input type="text" value="${m.title||''}" data-mi="${i}" data-mf="title" oninput="updCapesMethode('${k}',this)" ${m.locked?'disabled':''}></div>
+      <div class="two">
+        <div class="fl"><div class="lbl">Type</div><select data-mi="${i}" data-mf="type" onchange="updCapesMethode('${k}',this)" ${m.locked?'disabled':''}>
+          <option value="">—</option>
+          ${METHODE_LABELS.map(l=>`<option value="${l}"${m.type===l?' selected':''}>${l}</option>`).join('')}
+        </select></div>
+        <div class="fl"><div class="lbl">Label thème</div><select data-mi="${i}" data-mf="label" onchange="updCapesMethode('${k}',this)" ${m.locked?'disabled':''}>
+          <option value="">—</option>
+          ${CAPES_LABELS.map(l=>`<option value="${l}"${m.label===l?' selected':''}>${l}</option>`).join('')}
+        </select></div>
+      </div>
+      <div class="two">
+        <div class="fl"><div class="lbl">Source / auteur</div><input type="text" value="${m.source||''}" placeholder="manuel, prof..." data-mi="${i}" data-mf="source" oninput="updCapesMethode('${k}',this)" ${m.locked?'disabled':''}></div>
+        <div class="fl"><div class="lbl">Statut</div><select data-mi="${i}" data-mf="status" onchange="updCapesMethode('${k}',this)" ${m.locked?'disabled':''}>
+          <option value="à revoir"${m.status==='à revoir'?' selected':''}>À revoir</option>
+          <option value="en cours"${m.status==='en cours'?' selected':''}>En cours</option>
+          <option value="maîtrisé"${m.status==='maîtrisé'?' selected':''}>Maîtrisé</option>
+        </select></div>
+      </div>
+      <div class="fl"><div class="lbl">Notes de méthode</div><textarea placeholder="Conseils, erreurs à éviter, points clés..." data-mi="${i}" data-mf="note" oninput="updCapesMethode('${k}',this)" ${m.locked?'disabled':''}>${m.note||''}</textarea></div>
+    </div>`).join('');
+  return `<div class="fl">${rows}<button class="add-btn" onclick="addCapesMethode('${k}')">+ Ajouter une fiche méthode</button></div>`;
+}
+
+function addCapesMethode(k){
+  const day=initDay(k);
+  day.capesMethodesList=day.capesMethodesList||[];
+  day.capesMethodesList.push({title:'',type:'',label:'',source:'',status:'en cours',note:'',locked:false});
+  saveData();keepCapesOpen(k);
+}
+function removeCapesMethode(k,i){initDay(k).capesMethodesList.splice(i,1);saveData();keepCapesOpen(k);}
+function toggleCapesMethodeLock(k,i){
+  const day=initDay(k);day.capesMethodesList=day.capesMethodesList||[];
+  day.capesMethodesList[i]=day.capesMethodesList[i]||{};
+  day.capesMethodesList[i].locked=!day.capesMethodesList[i].locked;
+  saveData();keepCapesOpen(k);
+}
+function updCapesMethode(k,input){
+  const day=initDay(k);day.capesMethodesList=day.capesMethodesList||[];
+  const i=+input.dataset.mi,f=input.dataset.mf;
+  day.capesMethodesList[i]=day.capesMethodesList[i]||{};
+  if(day.capesMethodesList[i].locked)return;
+  day.capesMethodesList[i][f]=input.tagName==='SELECT'?input.options[input.selectedIndex].value:input.value;
 }
 
 function removeCapesArticle(k,i){
@@ -2060,8 +2146,81 @@ const healthChartId='health-chart';
   const capesObjKey='__capesObj';
   const capesObj=DATA[capesObjKey]||100;
 
+  /* ── IDs canvas dynamiques ── */
+  const moodChartId='chart-mood-'+Date.now();
+  const teraliteChartId='chart-trl-'+Date.now();
+
+  /* ── Heatmap par section avec intensité ── */
+  function renderSectionHeatmap(year,fnVal,colorFn,legendItems){
+    const start=new Date(year,0,1),end=new Date(year,11,31);
+    const startDow=(start.getDay()+6)%7;
+    let html='<div class="heatmap-wrap"><div class="heatmap-grid">';
+    let week='<div class="heatmap-week">';
+    for(let i=0;i<startDow;i++) week+='<div class="hm-cell" style="background:transparent"></div>';
+    let cur=new Date(start);
+    while(cur<=end){
+      const k=dk(cur.getFullYear(),cur.getMonth(),cur.getDate());
+      const d=DATA[k]||{};const val=fnVal(d);const col=colorFn(val);
+      const dow=(cur.getDay()+6)%7;
+      if(dow===0&&cur.getTime()!==start.getTime()){html+=week+'</div>';week='<div class="heatmap-week">';}
+      week+='<div class="hm-cell" style="background:'+col+'" title="'+k+(val!==null?' · '+val:'')+'"></div>';
+      cur.setDate(cur.getDate()+1);
+    }
+    html+=week+'</div></div>';
+    if(legendItems&&legendItems.length){
+      html+='<div style="display:flex;align-items:center;gap:8px;margin-top:5px;font-size:11px;color:var(--text2);flex-wrap:wrap">';
+      legendItems.forEach(function(item){html+='<span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:'+item[0]+'"></span>'+item[1]+'</span>';});
+      html+='</div>';
+    }
+    return html;
+  }
+
+  /* ── Radar livres loisir ── */
+  function renderLoisirRadar(books){
+    const statusColors={terminé:'#1d9e75','en cours':'#185fa5','à lire':'#b4b2a9'};
+    const byStatus={terminé:0,'en cours':0,'à lire':0};
+    books.forEach(function(b){if(byStatus[b.status]!==undefined)byStatus[b.status]++;});
+    const genres={};
+    books.forEach(function(b){const g=b.genre||b.label||'Non classé';genres[g]=(genres[g]||0)+1;});
+    const maxG=Math.max(1,...Object.values(genres));
+    let html='<div class="radar-wrap">';
+    Object.entries(genres).forEach(function(e){
+      const g=e[0],n=e[1];const pct=Math.round(n/maxG*100);
+      const col=pct>=75?'#1d9e75':pct>=50?'#185fa5':pct>=25?'#f0c040':'#b4b2a9';
+      html+='<div class="radar-theme"><div class="radar-theme-label">'+g+'</div>'
+        +'<div class="radar-bar-row"><div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden"><div class="radar-bar-fill" style="width:'+pct+'%;background:'+col+'"></div></div>'
+        +'<span style="min-width:20px;text-align:right;font-weight:500">'+n+'</span></div></div>';
+    });
+    html+='</div><div style="display:flex;gap:10px;margin-top:6px;font-size:12px;flex-wrap:wrap">';
+    Object.entries(byStatus).forEach(function(e){html+='<span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+statusColors[e[0]]+'"></span>'+e[0]+' : <strong>'+e[1]+'</strong></span>';});
+    html+='</div>';
+    return html;
+  }
+
+  /* ── Radar articles CAPES ── */
+  function renderArticlesRadar(items){
+    const counts={};CAPES_LABELS.forEach(function(l){counts[l]={n:0,lu:0};});
+    items.forEach(function(a){if(counts[a.label]){counts[a.label].n++;if(a.status==='terminé')counts[a.label].lu++;}});
+    const maxN=Math.max(1,...Object.values(counts).map(function(c){return c.n;}));
+    let html='<div class="radar-wrap">';
+    CAPES_LABELS.forEach(function(t){
+      const c=counts[t]||{n:0,lu:0};const pct=Math.round(c.n/maxN*100);
+      const color=pct>=75?'#d4537e':pct>=50?'#e24b4a':pct>=25?'#f09595':'#b4b2a9';
+      html+='<div class="radar-theme"><div class="radar-theme-label">'+t+'</div>'
+        +'<div class="radar-bar-row"><div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden"><div class="radar-bar-fill" style="width:'+pct+'%;background:'+color+'"></div></div>'
+        +'<span style="min-width:20px;text-align:right;font-weight:500">'+c.n+'</span></div>'
+        +'<div style="font-size:11px;color:var(--text2)">'+c.lu+' lu'+(c.lu!==1?'s':'')+'</div></div>';
+    });
+    html+='</div>';
+    return html;
+  }
+
   document.getElementById('stat-content').innerHTML=`
   <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Période : ${label} · ${allDays.length} jour${allDays.length!==1?'s':''} renseigné${allDays.length!==1?'s':''}</div>
+
+  <div class="stitle">Titre de la semaine <span class="stitle-badge">reset lundi</span></div>
+  ${weekTitle}
+  ${weeklyBadgesHtml}
 
   <div class="stitle">Suivi santé <span class="stitle-badge">modulable</span></div>
   <div class="add-item" style="margin-bottom:12px">
@@ -2082,6 +2241,52 @@ const healthChartId='health-chart';
   </div>
   <div class="chart-wrap" style="height:300px;margin-bottom:14px"><canvas id="health-chart" role="img" aria-label="Suivi santé modulable">Suivi santé.</canvas></div>
 
+  <div class="stitle">Répartition des humeurs <span class="stitle-badge">distribution</span></div>
+  ${moodBars||'<div style="font-size:13px;color:var(--text3)">Aucune humeur renseignée.</div>'}
+  <div class="chart-wrap" style="height:180px;margin-top:10px;margin-bottom:14px"><canvas id="${moodChartId}" role="img" aria-label="Humeurs dans le temps">Humeurs dans le temps.</canvas></div>
+
+  <div class="stitle">Teralite <span class="stitle-badge">suivi détaillé</span></div>
+  <div class="chart-wrap" style="height:160px;margin-bottom:6px"><canvas id="${teraliteChartId}" role="img" aria-label="Suivi Teralite">Suivi Teralite.</canvas></div>
+  <div style="display:flex;gap:10px;font-size:11px;color:var(--text2);margin-bottom:8px;flex-wrap:wrap">
+    <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#1d9e75"></span>pris</span>
+    <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#ba7517"></span>décalé</span>
+    <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#e24b4a"></span>oublié</span>
+    <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--bg3)"></span>non renseigné</span>
+  </div>
+  <div class="stitle">Teralite — dérive horaire <span class="stitle-badge">vs heure idéale ${DATA.__teraliteIdealTime||'22:00'}</span></div>
+  <div id="trl-drift-wrap" class="chart-wrap" style="height:120px;margin-bottom:14px"><div style="font-size:13px;color:var(--text3)">Renseigne des heures de prise pour voir les dérives.</div></div>
+
+  <div class="stitle">Santé — distribution du sommeil <span class="stitle-badge">durées</span></div>
+  <div id="sleep-dist-wrap" class="chart-wrap" style="height:150px;margin-bottom:12px"></div>
+
+  <div class="stitle">Santé — énergie × humeur <span class="stitle-badge">scatter</span></div>
+  <div id="scatter-wrap" class="chart-wrap" style="height:180px;margin-bottom:14px"></div>
+
+  <div class="stitle">Travail — stress & énergie dans le temps</div>
+  <div id="stress-time-wrap" class="chart-wrap" style="height:180px;margin-bottom:12px"></div>
+
+  <div class="stitle">Travail — heures par type par semaine</div>
+  <div id="travail-weeks-wrap" class="chart-wrap" style="height:180px;margin-bottom:14px"></div>
+
+  <div class="stitle">Écriture — mots par jour <span class="stitle-badge">roman + poésie</span></div>
+  <div id="mots-wrap" class="chart-wrap" style="height:160px;margin-bottom:10px"></div>
+
+  <div class="stitle">Écriture — cumul roman <span class="stitle-badge">progression vers 80 000 mots</span></div>
+  <div id="roman-cumul-wrap" class="chart-wrap" style="height:150px;margin-bottom:6px"></div>
+  <div id="roman-projection" style="font-size:12px;color:var(--text2);margin-bottom:14px"></div>
+
+  <div class="stitle">CAPES — fiches cumulées <span class="stitle-badge">progression vs objectif</span></div>
+  <div id="fiches-cumul-wrap" class="chart-wrap" style="height:150px;margin-bottom:12px"></div>
+
+  <div class="stitle">CAPES — entraînements par type</div>
+  <div id="entrains-wrap" class="chart-wrap" style="height:160px;margin-bottom:14px"></div>
+
+  ${rollingData.length>=5?`<div class="stitle">Tendance humeur — fenêtre glissante 7 jours</div>
+  <div class="chart-wrap" style="height:180px;margin-bottom:14px"><canvas id="${rollingId}" role="img" aria-label="Humeur moyenne 7 jours">Tendance humeur.</canvas></div>`:''}
+
+  <div class="stitle">Humeur & énergie par jour de la semaine</div>
+  <div class="chart-wrap" style="height:200px;margin-bottom:14px"><canvas id="${dowRadarId}" role="img" aria-label="Profil hebdomadaire">Profil hebdomadaire.</canvas></div>
+
   <div class="stat-grid">
     <div class="sc"><div class="sc-label">Énergie moyenne</div><div class="sc-val">${avgE||'—'}</div><div class="sc-sub">sur 10</div></div>
     <div class="sc"><div class="sc-label">Jours sport</div><div class="sc-val">${sportD.length}</div></div>
@@ -2097,8 +2302,34 @@ const healthChartId='health-chart';
 
   ${warns.map(w=>`<div class="warn-box">${w}</div>`).join('')}
 
-  <div class="stitle">Heatmap annuelle <span class="stitle-badge">${now.getFullYear()}</span></div>
+  <div class="stitle">Heatmap — qualité journée <span class="stitle-badge">${now.getFullYear()}</span></div>
   ${renderHeatmap(now.getFullYear())}
+
+  <div class="stitle">Heatmap — sport <span class="stitle-badge">intensité par durée</span></div>
+  ${renderSectionHeatmap(now.getFullYear(),d=>{const min=sportMinutesForStats(d);return min||null;},v=>v===null?'var(--bg3)':v>=120?'#185fa5':v>=60?'#378ADD':v>=30?'#b5d4f4':'#deeefa',[['#deeefa','< 30 min'],['#b5d4f4','30 min'],['#378ADD','60 min'],['#185fa5','120 min +']])}
+
+  <div class="stitle">Heatmap — écriture <span class="stitle-badge">intensité par mots</span></div>
+  ${renderSectionHeatmap(now.getFullYear(),d=>{const m=(d.ecriture?.roman?.mots||0)+(d.ecriture?.poesie?.mots||0);return m||null;},v=>v===null?'var(--bg3)':v>=1000?'#3c3489':v>=500?'#7f77dd':v>=200?'#c5c2f5':'#eeedfe',[['#eeedfe','1–200 mots'],['#c5c2f5','200+'],['#7f77dd','500+'],['#3c3489','1000+']])}
+
+  <div class="stitle">Heatmap — CAPES <span class="stitle-badge">intensité par fiches</span></div>
+  ${renderSectionHeatmap(now.getFullYear(),d=>{const f=(d.capesFichesList?.length||0)+(d.entrains?.length?1:0);return f||null;},v=>v===null?'var(--bg3)':v>=5?'#72243e':v>=3?'#d4537e':v>=1?'#f5b8cc':'#fbeaf0',[['#fbeaf0','1'],['#f5b8cc','2'],['#d4537e','3–4'],['#72243e','5+']])}
+
+  <div class="stitle">Heatmap — lectures loisir <span class="stitle-badge">jours de lecture</span></div>
+  ${renderSectionHeatmap(now.getFullYear(),d=>{const n=(d.books||[]).filter(b=>b.type==='loisir').length;return n||null;},v=>v===null?'var(--bg3)':v>=3?'#3c3489':v>=2?'#7f77dd':'#eeedfe',[['#eeedfe','1 livre'],['#7f77dd','2 livres'],['#3c3489','3+']])}
+
+  <div class="stitle">Heatmap — lectures CAPES <span class="stitle-badge">jours de lecture active</span></div>
+  ${renderSectionHeatmap(now.getFullYear(),d=>{const n=(d.capesBooksList||[]).length;return n||null;},v=>v===null?'var(--bg3)':v>=3?'#72243e':v>=2?'#d4537e':'#fbeaf0',[['#fbeaf0','1 livre'],['#d4537e','2 livres'],['#72243e','3+']])}
+
+  <div class="stitle">Heatmap — articles CAPES <span class="stitle-badge">jours de lecture</span></div>
+  ${renderSectionHeatmap(now.getFullYear(),d=>{const n=(d.capesArticlesList||[]).length;return n||null;},v=>v===null?'var(--bg3)':v>=3?'#a32d2d':v>=2?'#e24b4a':'#f5b0b0',[['#f5b0b0','1 article'],['#e24b4a','2 articles'],['#a32d2d','3+']])}
+
+  <div class="stitle">Portrait-robot de ton meilleur toi</div>
+  ${bestSelfHtml}
+
+  ${yearAgoHtml?`<div class="stitle">Comparaison — il y a un an</div>${yearAgoHtml}`:''}
+
+  <div class="stitle">Derniers records <span class="stitle-badge">distance au sommet</span></div>
+  ${recordsHtml||'<div style="font-size:13px;color:var(--text3)">Pas encore de données suffisantes.</div>'}
 
   <div class="stitle">Séries (streaks) <span class="stitle-badge">gamification</span></div>
   <div class="streak-row"><span class="streak-fire">🔥</span><span class="streak-val">${sportStreak.cur}</span><span class="streak-lbl">jours de sport consécutifs</span><span class="streak-max">record : ${sportStreak.max}j${sportStreak.maxEndDate?' ('+sportStreak.maxEndDate+')':''}</span></div>
@@ -2129,9 +2360,7 @@ const healthChartId='health-chart';
     <div class="sc"><div class="sc-label">Poèmes</div><div class="sc-val">${totalPoemes}</div></div>
     <div class="sc"><div class="sc-label">Mots poésie</div><div class="sc-val">${totalPoesieMots.toLocaleString('fr-FR')}</div></div>
   </div>
-
-  <div class="stitle">Répartition des humeurs</div>
-  ${moodBars||'<div style="font-size:13px;color:var(--text3)">Aucune humeur renseignée.</div>'}
+  ${regularityHtml}
 
   ${kmCourse>0?`<div class="stitle">Équivalences fun <span class="stitle-badge">pour sourire</span></div>
   <div class="stat-grid">
@@ -2140,59 +2369,44 @@ const healthChartId='health-chart';
     <div class="sc"><div class="sc-label">Mots écrits total</div><div class="sc-val">${(totalRomanMots+totalPoesieMots).toLocaleString('fr-FR')}</div><div class="sc-sub">≈ ${Math.round((totalRomanMots+totalPoesieMots)/250)} pages imprimées</div></div>
   </div>`:''}
 
-  <div class="stitle">CAPES — couverture thématique</div>
+  <div class="stitle">Frise des événements</div>
+  ${timelineHtml}
+
+  <div class="stitle">CAPES — couverture fiches par thème</div>
   ${renderCapesRadar(allFiches,allCapesBooks,allCapesArticles,capesObj)}
-  <div style="margin-top:8px">
-    <div class="lbl" style="margin-bottom:4px">Objectif fiches</div>
+  <div style="margin-top:8px"><div class="lbl" style="margin-bottom:4px">Objectif fiches</div>
     <input type="number" min="1" max="500" value="${capesObj}" style="width:100px;font-size:13px;padding:5px 8px;border:0.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif" oninput="DATA['__capesObj']=+this.value||100;saveData()">
   </div>
   ${capesTempsHtml?`<div class="stitle">Temps par thème CAPES <span class="stitle-badge">estimé via fiches</span></div>${capesTempsHtml}`:''}
 
-  <div class="stitle">Bibliothèque des fiches CAPES (${allFiches.length})</div>
-  ${allFiches.length?allFiches.map(f=>`
-    <div class="book-item">
-      <div class="book-title">${f.title}</div>
-      <div class="book-meta">${f.date} · ${f.label||'sans label'}</div>
-      ${f.note?`<div style="font-size:11px;color:var(--text2);margin-top:3px">${f.note}</div>`:''}
-    </div>
-  `).join(''):'<div style="font-size:13px;color:var(--text3)">Aucune fiche CAPES renseignée.</div>'}
-  <div class="stitle">Bibliothèque — loisir (${loisirBooks.length})</div>${loisirList}
-    <div class="stitle">Graphiques CAPES <span class="stitle-badge">fiches & livres</span></div>
+  <div class="stitle">CAPES — couverture livres par thème</div>
+  ${renderArticlesRadar(allCapesBooks)}
 
-  <div class="chart-wrap" style="height:220px;margin-bottom:12px">
-    <canvas id="${chartFichesRepId}" role="img" aria-label="Répartition des fiches CAPES par label">Répartition des fiches CAPES par label.</canvas>
-  </div>
-  <div class="chart-wrap" style="height:220px;margin-bottom:12px">
-    <canvas id="${chartFichesProdId}" role="img" aria-label="Production des fiches CAPES par date">Production des fiches CAPES par date.</canvas>
-  </div>
-  <div class="chart-wrap" style="height:220px;margin-bottom:12px">
-    <canvas id="${chartBooksRepId}" role="img" aria-label="Répartition des livres CAPES par label">Répartition des livres CAPES par label.</canvas>
-  </div>
-  <div class="chart-wrap" style="height:220px;margin-bottom:12px">
-    <canvas id="${chartBooksStatusId}" role="img" aria-label="Statut des livres CAPES">Statut des livres CAPES.</canvas>
-  </div>
-  <div class="chart-wrap" style="height:220px;margin-bottom:12px">
-    <canvas id="${chartArticlesRepId}" role="img" aria-label="Répartition des articles CAPES par label">Répartition des articles CAPES par label.</canvas>
-  </div>
-  <div class="chart-wrap" style="height:220px;margin-bottom:12px">
-    <canvas id="${chartArticlesStatusId}" role="img" aria-label="Statut des articles CAPES">Statut des articles CAPES.</canvas>
-  </div>
+  <div class="stitle">CAPES — couverture articles par thème</div>
+  ${renderArticlesRadar(allCapesArticles)}
+
+  <div class="stitle">Bibliothèque — livres loisir <span class="stitle-badge">couverture par genre</span></div>
+  ${renderLoisirRadar(loisirBooks)}
+
+  <div class="stitle">Bibliothèque des fiches CAPES (${allFiches.length})</div>
+  ${allFiches.length?allFiches.map(f=>`<div class="book-item"><div class="book-title">${f.title}</div><div class="book-meta">${f.date} · ${f.label||'sans label'}</div>${f.note?`<div style="font-size:11px;color:var(--text2);margin-top:3px">${f.note}</div>`:''}</div>`).join(''):'<div style="font-size:13px;color:var(--text3)">Aucune fiche CAPES renseignée.</div>'}
+  <div class="stitle">Bibliothèque — loisir (${loisirBooks.length})</div>${loisirList}
+  <div class="stitle">Graphiques CAPES <span class="stitle-badge">fiches & livres</span></div>
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartFichesRepId}" role="img" aria-label="Répartition des fiches CAPES par label">Répartition des fiches CAPES par label.</canvas></div>
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartFichesProdId}" role="img" aria-label="Production des fiches CAPES par date">Production des fiches CAPES par date.</canvas></div>
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartBooksRepId}" role="img" aria-label="Répartition des livres CAPES par label">Répartition des livres CAPES par label.</canvas></div>
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartBooksStatusId}" role="img" aria-label="Statut des livres CAPES">Statut des livres CAPES.</canvas></div>
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartArticlesRepId}" role="img" aria-label="Répartition des articles CAPES par label">Répartition des articles CAPES par label.</canvas></div>
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartArticlesStatusId}" role="img" aria-label="Statut des articles CAPES">Statut des articles CAPES.</canvas></div>
   <div class="stitle">Bibliothèque — CAPES (${allCapesBooks.length})</div>${capesList}
   <div class="stitle">Articles — CAPES (${allCapesArticles.length})</div>
-  ${allCapesArticles.length ? allCapesArticles.map(a=>`
-    <div class="book-item">
-      <div class="book-title">${a.title}</div>
-      <div class="book-meta">${a.author||'—'}${a.source?' · '+a.source:''}</div>
-      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:3px">
-        <span class="book-badge badge-capes">article</span>
-        ${a.label?`<span class="book-badge ${CAPES_BADGE_CLASSES[a.label]||'badge-capes'}">${a.label}</span>`:''}
-        <span style="font-size:11px;color:var(--text3)">${a.status}</span>
-        ${a.note?`<span style="font-size:11px;color:var(--text2)">— ${a.note}</span>`:''}
-      </div>
-    </div>`).join('') : '<div style="font-size:13px;color:var(--text3)">Aucun article CAPES renseigné.</div>'}
+  ${allCapesArticles.length?allCapesArticles.map(a=>`<div class="book-item"><div class="book-title">${a.title}</div><div class="book-meta">${a.author||'—'}${a.source?' · '+a.source:''}</div><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:3px"><span class="book-badge badge-capes">article</span>${a.label?`<span class="book-badge ${CAPES_BADGE_CLASSES[a.label]||'badge-capes'}">${a.label}</span>`:''}<span style="font-size:11px;color:var(--text3)">${a.status}</span>${a.note?`<span style="font-size:11px;color:var(--text2)">— ${a.note}</span>`:''}</div></div>`).join(''):'<div style="font-size:13px;color:var(--text3)">Aucun article CAPES renseigné.</div>'}
 
   <div class="stitle">Corrélations réelles <span class="stitle-badge">Pearson sur ${allEntriesAll.length} jours</span></div>
   ${corrHtml||'<div style="font-size:13px;color:var(--text3)">Pas assez de données pour calculer.</div>'}
+  <div class="stitle">Corrélations décalées <span class="stitle-badge">effets J+1 · J+2</span></div>
+  <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Ce qui d'hier prédit ton humeur ou ton énergie d'aujourd'hui.</div>
+  ${[lagCorrRow('Sport J → humeur J+1',lagSportMood1),lagCorrRow('Sport J → humeur J+2',lagSportMood2),lagCorrRow('Sommeil J → énergie J+1',lagSleepEnergy1),lagCorrRow('Sommeil J → humeur J+1',lagSleepMood1),lagCorrRow('Stress travail J → humeur J+1',lagStressMood1)].filter(Boolean).join('')||'<div style="font-size:13px;color:var(--text3)">Pas assez de données.</div>'}
   ${corrNote}
 
   <div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap">
@@ -2203,6 +2417,204 @@ const healthChartId='health-chart';
   </div>`;
 
   renderHealthChart();
+
+  /* ── Humeurs dans le temps ── */
+  const moodCv=document.getElementById(moodChartId);
+  if(moodCv&&withM.length>=2){
+    const moodTimeLabels=entries.map(([k])=>k.slice(5));
+    const moodTimeData=entries.map(([,d])=>moodNum(d.mood));
+    const moodPointColors=entries.map(([,d])=>moodCol(d.mood));
+    new Chart(moodCv,{type:'bar',data:{labels:moodTimeLabels,datasets:[{data:moodTimeData,backgroundColor:moodPointColors,borderRadius:2,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const labels=['','Très basse','Basse','Neutre','Bonne','Très bonne','Agitation'];return labels[ctx.parsed.y]||ctx.parsed.y;}}}},scales:{x:{ticks:{autoSkip:true,maxTicksLimit:14,font:{size:9}}},y:{min:0,max:6,ticks:{stepSize:1,font:{size:9},callback:v=>['','▼▼','▼','—','▲','▲▲','⚡'][v]||v}}}}});
+  }
+
+  /* ── Teralite chart ── */
+  const trlCv=document.getElementById(teraliteChartId);
+  if(trlCv){
+    const trlLabels=entries.map(([k])=>k.slice(5));
+    const trlColors=entries.map(([,d])=>{
+      const s=d.medStatus;
+      if(s==='pris')return '#1d9e75';
+      if(s==='decale'||s==='décalé')return '#ba7517';
+      if(s==='oublie'||s==='oublié')return '#e24b4a';
+      return 'rgba(0,0,0,0.06)';
+    });
+    const trlData=entries.map(([,d])=>{
+      const s=d.medStatus;
+      if(s==='pris')return 3;
+      if(s==='decale'||s==='décalé')return 2;
+      if(s==='oublie'||s==='oublié')return 1;
+      return 0.3;
+    });
+    new Chart(trlCv,{type:'bar',data:{labels:trlLabels,datasets:[{data:trlData,backgroundColor:trlColors,borderRadius:2,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const l=['non renseigné','oublié','décalé','pris'];return l[Math.round(ctx.parsed.y)]||'';}}}},scales:{x:{ticks:{autoSkip:true,maxTicksLimit:14,font:{size:9}}},y:{min:0,max:3,display:false}}}});
+  }
+
+  /* ── Teralite dérive horaire ── */
+  (function(){
+    const ideal=DATA.__teraliteIdealTime||'22:00';
+    const toMin=t=>{if(!t)return null;const[h,m]=t.split(':').map(Number);return h*60+m;};
+    const idealMin=toMin(ideal);
+    const driftLabels=[],driftData=[],driftColors=[];
+    entries.forEach(([k,d])=>{
+      if(!d.medTime)return;
+      const actual=toMin(d.medTime);
+      let diff=actual-idealMin;
+      if(diff>720)diff-=1440;if(diff<-720)diff+=1440;
+      driftLabels.push(k.slice(5));
+      driftData.push(diff);
+      driftColors.push(Math.abs(diff)<=15?'#1d9e75':Math.abs(diff)<=30?'#639922':Math.abs(diff)<=60?'#ba7517':'#e24b4a');
+    });
+    const driftId='chart-trl-drift-'+Date.now();
+    const driftEl=document.getElementById('trl-drift-wrap');
+    if(driftEl&&driftLabels.length>=2){
+      driftEl.innerHTML='<canvas id="'+driftId+'" role="img" aria-label="Dérive horaire Teralite" style="height:120px"></canvas>';
+      new Chart(document.getElementById(driftId),{type:'bar',data:{labels:driftLabels,datasets:[{data:driftData,backgroundColor:driftColors,borderRadius:2,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const v=ctx.parsed.y;return (v>0?'+':'')+v+'min vs idéal';}}}},scales:{x:{ticks:{autoSkip:true,maxTicksLimit:14,font:{size:9}}},y:{ticks:{font:{size:9},callback:v=>(v>0?'+':'')+v+'min'}}}}});
+    } else if(driftEl){driftEl.innerHTML='<div style="font-size:13px;color:var(--text3)">Pas encore assez de données d\'heure de prise.</div>';}
+  })();
+
+  /* ═══════════════════════════════════════
+     GRAPHIQUES SANTÉ AVANCÉS
+     ═══════════════════════════════════════ */
+
+  /* ── Sommeil — distribution des durées ── */
+  (function(){
+    const sleepBuckets={};
+    entries.forEach(([,d])=>{
+      const h=sleepHoursForStats(d);if(!h)return;
+      const bucket=Math.floor(h*2)/2;
+      sleepBuckets[bucket]=(sleepBuckets[bucket]||0)+1;
+    });
+    const sbKeys=Object.keys(sleepBuckets).sort((a,b)=>+a-+b);
+    if(sbKeys.length<2)return;
+    const sbId='chart-sleep-dist-'+Date.now();
+    const sbEl=document.getElementById('sleep-dist-wrap');
+    if(!sbEl)return;
+    sbEl.innerHTML='<canvas id="'+sbId+'" role="img" aria-label="Distribution durées sommeil" style="height:150px"></canvas>';
+    new Chart(document.getElementById(sbId),{type:'bar',data:{labels:sbKeys.map(v=>v+'h'),datasets:[{data:sbKeys.map(v=>sleepBuckets[v]),backgroundColor:sbKeys.map(v=>+v>=7?'#1d9e75':+v>=6?'#639922':+v>=5?'#ba7517':'#e24b4a'),borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y+' nuit(s)'}}},scales:{x:{title:{display:true,text:'heures',font:{size:10}}},y:{ticks:{font:{size:9},stepSize:1}}}}});
+  })();
+
+  /* ── Énergie vs Humeur scatter ── */
+  (function(){
+    const pts=entries.map(([,d])=>{const m=moodNum(d.mood);const e=d.energy;return m&&e?{x:e,y:m,c:moodCol(d.mood)}:null;}).filter(Boolean);
+    if(pts.length<4)return;
+    const scId='chart-scatter-'+Date.now();
+    const scEl=document.getElementById('scatter-wrap');
+    if(!scEl)return;
+    scEl.innerHTML='<canvas id="'+scId+'" role="img" aria-label="Scatter énergie vs humeur" style="height:180px"></canvas>';
+    new Chart(document.getElementById(scId),{type:'scatter',data:{datasets:[{data:pts.map(p=>({x:p.x,y:p.y})),backgroundColor:pts.map(p=>p.c+'99'),pointRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'Énergie '+ctx.parsed.x+' · Humeur '+((['','Très basse','Basse','Neutre','Bonne','Très bonne','Agitation'])[ctx.parsed.y]||ctx.parsed.y)}}},scales:{x:{min:1,max:10,title:{display:true,text:'Énergie',font:{size:10}}},y:{min:1,max:6,ticks:{stepSize:1,font:{size:9},callback:v=>(['','▼▼','▼','—','▲','▲▲','⚡'])[v]||v}}}}});
+  })();
+
+  /* ═══════════════════════════════════════
+     GRAPHIQUES TRAVAIL
+     ═══════════════════════════════════════ */
+
+  /* ── Stress travail + énergie dans le temps ── */
+  (function(){
+    const stressLabels=entries.map(([k])=>k.slice(5));
+    const stT=entries.map(([,d])=>d.stressTravail||null);
+    const stS=entries.map(([,d])=>d.stressSocial||null);
+    const enData=entries.map(([,d])=>d.energy?d.energy/2:null);
+    if(stressLabels.length<2)return;
+    const stId='chart-stress-time-'+Date.now();
+    const stEl=document.getElementById('stress-time-wrap');
+    if(!stEl)return;
+    stEl.innerHTML='<canvas id="'+stId+'" role="img" aria-label="Stress et énergie dans le temps" style="height:180px"></canvas>';
+    new Chart(document.getElementById(stId),{type:'line',data:{labels:stressLabels,datasets:[
+      {label:'Stress travail',data:stT,borderColor:'#e24b4a',backgroundColor:'transparent',tension:0.3,pointRadius:2,borderWidth:1.5,spanGaps:true},
+      {label:'Stress social',data:stS,borderColor:'#ba7517',backgroundColor:'transparent',tension:0.3,pointRadius:2,borderWidth:1.5,spanGaps:true},
+      {label:'Énergie ÷2',data:enData,borderColor:'#185fa5',backgroundColor:'#e6f1fb44',fill:true,tension:0.3,pointRadius:1,borderWidth:1.5,spanGaps:true}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}}},scales:{x:{ticks:{autoSkip:true,maxTicksLimit:12,font:{size:9}}},y:{min:0,max:5,ticks:{stepSize:1,font:{size:9}}}}}});
+  })();
+
+  /* ── Rapport copies/travail dans la semaine ── */
+  (function(){
+    const travailWeeks={};
+    entries.forEach(([k,d])=>{
+      if(!d.travailTodos)return;
+      const dt=parseDateKey(k);
+      const wn=Math.ceil((dt-new Date(dt.getFullYear(),0,1))/86400000/7);
+      const wk=dt.getFullYear()+'-S'+String(wn).padStart(2,'0');
+      travailWeeks[wk]=travailWeeks[wk]||{};
+      TRAVAIL_TODOS.forEach(t=>{travailWeeks[wk][t.key]=(travailWeeks[wk][t.key]||0)+(d.travailTodos[t.key]?.minutes||0);});
+    });
+    const wks=Object.keys(travailWeeks).sort();
+    if(wks.length<2)return;
+    const twId='chart-travail-weeks-'+Date.now();
+    const twEl=document.getElementById('travail-weeks-wrap');
+    if(!twEl)return;
+    twEl.innerHTML='<canvas id="'+twId+'" role="img" aria-label="Temps travail par semaine" style="height:180px"></canvas>';
+    const colors=['#D85A30','#185FA5','#1D9E75','#7F77DD'];
+    new Chart(document.getElementById(twId),{type:'bar',data:{labels:wks,datasets:TRAVAIL_TODOS.map((t,i)=>({label:t.label,data:wks.map(w=>Math.round((travailWeeks[w][t.key]||0)/60*10)/10),backgroundColor:colors[i]+'aa',borderColor:colors[i],borderWidth:1,stack:'t'}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+' : '+ctx.parsed.y+'h'}}},scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:30}},y:{stacked:true,title:{display:true,text:'heures',font:{size:10}},ticks:{font:{size:9}}}}}});
+  })();
+
+  /* ═══════════════════════════════════════
+     GRAPHIQUES ÉCRITURE
+     ═══════════════════════════════════════ */
+
+  /* ── Mots par jour — roman+poésie stacked ── */
+  (function(){
+    const motLabels=entries.map(([k])=>k.slice(5));
+    const motRoman=entries.map(([,d])=>d.ecriture?.roman?.mots||0);
+    const motPoesie=entries.map(([,d])=>d.ecriture?.poesie?.mots||0);
+    if(motLabels.length<2||Math.max(...motRoman,...motPoesie)===0)return;
+    const mId='chart-mots-'+Date.now();
+    const mEl=document.getElementById('mots-wrap');
+    if(!mEl)return;
+    mEl.innerHTML='<canvas id="'+mId+'" role="img" aria-label="Mots écrits par jour" style="height:160px"></canvas>';
+    new Chart(document.getElementById(mId),{type:'bar',data:{labels:motLabels,datasets:[
+      {label:'Roman',data:motRoman,backgroundColor:'#7f77dd',stack:'m'},
+      {label:'Poésie',data:motPoesie,backgroundColor:'#d4537e',stack:'m'}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}}},scales:{x:{stacked:true,ticks:{autoSkip:true,maxTicksLimit:14,font:{size:9}}},y:{stacked:true,ticks:{font:{size:9}}}}}});
+  })();
+
+  /* ── Cumul de mots roman dans le temps ── */
+  (function(){
+    let cum=0;const cumLabels=[],cumData=[];
+    entries.forEach(([k,d])=>{cum+=(d.ecriture?.roman?.mots||0);if(d.ecriture?.roman?.mots){cumLabels.push(k.slice(5));cumData.push(cum);}});
+    if(cumLabels.length<2)return;
+    const cId='chart-roman-cumul-'+Date.now();
+    const cEl=document.getElementById('roman-cumul-wrap');
+    if(!cEl)return;
+    cEl.innerHTML='<canvas id="'+cId+'" role="img" aria-label="Cumul mots roman" style="height:150px"></canvas>';
+    /* projection */
+    const slope=cum/Math.max(1,allEntriesAll.length);
+    const projAt80k=slope>0?Math.round((80000-cum)/slope):null;
+    new Chart(document.getElementById(cId),{type:'line',data:{labels:cumLabels,datasets:[{label:'Mots cumulés',data:cumData,borderColor:'#7f77dd',backgroundColor:'#eeedfe55',fill:true,tension:0.3,pointRadius:2,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y.toLocaleString('fr-FR')+' mots'+(ctx.parsed.y>=80000?' 🏁 Roman complet!':'')}}},scales:{x:{ticks:{autoSkip:true,maxTicksLimit:12,font:{size:9}}},y:{ticks:{font:{size:9},callback:v=>v.toLocaleString('fr-FR')}}}}});
+    /* afficher projection */
+    const projEl=document.getElementById('roman-projection');
+    if(projEl){projEl.innerHTML=projAt80k?'À ce rythme, roman complet dans <strong>'+projAt80k+'</strong> jours ('+Math.round(projAt80k/30)+' mois).':'Commence à saisir les mots pour voir la projection.';}
+  })();
+
+  /* ═══════════════════════════════════════
+     GRAPHIQUES CAPES
+     ═══════════════════════════════════════ */
+
+  /* ── Fiches CAPES dans le temps (cumulatif) ── */
+  (function(){
+    let cum=0;const fLabels=[],fData=[];
+    entries.forEach(([k,d])=>{const n=d.capesFichesList?.length||0;cum+=n;if(n>0){fLabels.push(k.slice(5));fData.push(cum);}});
+    if(fLabels.length<2)return;
+    const fId='chart-fiches-cumul-'+Date.now();
+    const fEl=document.getElementById('fiches-cumul-wrap');
+    if(!fEl)return;
+    fEl.innerHTML='<canvas id="'+fId+'" role="img" aria-label="Cumul fiches CAPES" style="height:150px"></canvas>';
+    const capesObj2=DATA.__capesObj||100;
+    new Chart(document.getElementById(fId),{type:'line',data:{labels:fLabels,datasets:[{label:'Fiches cumulées',data:fData,borderColor:'#d4537e',backgroundColor:'#fbeaf055',fill:true,tension:0.3,pointRadius:2,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y+' fiches / '+capesObj2+' ('+Math.round(ctx.parsed.y/capesObj2*100)+'%)'}}},scales:{x:{ticks:{autoSkip:true,maxTicksLimit:12,font:{size:9}}},y:{ticks:{font:{size:9}},max:Math.max(capesObj2,Math.max(...fData))}}}});
+  })();
+
+  /* ── Entraînements par type ── */
+  (function(){
+    const enTrainCount={};
+    ENTRAIN_OPTS.forEach(e=>{enTrainCount[e]=0;});
+    entries.forEach(([,d])=>{(d.entrains||[]).forEach(e=>{enTrainCount[e]=(enTrainCount[e]||0)+1;});});
+    const eKeys=Object.keys(enTrainCount).filter(k=>enTrainCount[k]>0);
+    if(!eKeys.length)return;
+    const eId='chart-entrains-'+Date.now();
+    const eEl=document.getElementById('entrains-wrap');
+    if(!eEl)return;
+    eEl.innerHTML='<canvas id="'+eId+'" role="img" aria-label="Entraînements par type" style="height:160px"></canvas>';
+    const eCols=['#d4537e','#e24b4a','#ba7517','#185fa5','#1d9e75','#7f77dd'];
+    new Chart(document.getElementById(eId),{type:'bar',data:{labels:eKeys,datasets:[{data:eKeys.map(k=>enTrainCount[k]),backgroundColor:eKeys.map((_,i)=>eCols[i%eCols.length]),borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y+' séance(s)'}}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{stepSize:1,font:{size:9}}}}}});
+  })();
 
   /* ── Rolling 7j chart ── */
   if(rollingData.length>=5){
