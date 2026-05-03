@@ -37,6 +37,63 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .drive-btn:hover{background:var(--bg2)}
 .drive-btn.connected{background:var(--info-bg);border-color:var(--info-border);color:var(--info-text)}
 
+/* ─── QUICK ENTRY ─── */
+.quick-fab{position:fixed;bottom:24px;right:20px;width:52px;height:52px;border-radius:50%;background:var(--text);color:var(--bg);border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.22);z-index:100;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.quick-fab:hover{transform:scale(1.08)}
+.quick-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center}
+.quick-overlay.open{display:flex}
+.quick-modal{background:var(--bg);border-radius:var(--rl) var(--rl) 0 0;width:100%;max-width:740px;padding:20px 20px 32px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow-y:auto}
+.quick-title{font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:2px}
+.quick-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text2);align-self:flex-end;margin-bottom:-8px}
+.quick-section{display:flex;flex-direction:column;gap:6px}
+.quick-lbl{font-size:12px;color:var(--text2);font-weight:500}
+.quick-mood-row{display:flex;gap:6px;flex-wrap:wrap}
+.qmb{border:0.5px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:13px;cursor:pointer;background:none;color:var(--text);font-family:'DM Sans',sans-serif;flex:1;text-align:center}
+.qmb:hover{background:var(--bg2)}
+.qmb.sel-vl{background:#fcebeb!important;border-color:#e24b4a!important;color:#a32d2d!important}
+.qmb.sel-l{background:#fcebeb!important;border-color:#f09595!important;color:#791f1f!important}
+.qmb.sel-n{background:var(--bg2)!important;border-color:#888780!important}
+.qmb.sel-g{background:#eaf3de!important;border-color:#639922!important;color:#3b6d11!important}
+.qmb.sel-vg{background:#e1f5ee!important;border-color:#1d9e75!important;color:#0f6e56!important}
+.qmb.sel-h{background:#faeeda!important;border-color:#ba7517!important;color:#854f0b!important}
+.quick-save-btn{background:var(--text);color:var(--bg);border:none;border-radius:var(--r);padding:12px;font-size:14px;cursor:pointer;font-weight:500;font-family:'DM Sans',sans-serif;margin-top:4px}
+.quick-save-btn:hover{opacity:.85}
+
+/* ─── SEARCH ─── */
+.search-bar{display:flex;gap:8px;margin-bottom:14px}
+.search-input{flex:1;font-size:13px;padding:7px 11px;border:0.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif}
+.search-input:focus{outline:none;border-color:var(--border2)}
+.search-btn{padding:7px 14px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif}
+.search-result{background:var(--bg2);border-radius:var(--r);padding:10px 13px;margin-bottom:6px;cursor:pointer;border:0.5px solid var(--border)}
+.search-result:hover{border-color:var(--border2)}
+.search-result-date{font-size:11px;color:var(--text2);margin-bottom:3px}
+.search-result-snippet{font-size:13px}
+.search-highlight{background:#faeeda;border-radius:2px;padding:0 2px}
+
+/* ─── HEATMAP ─── */
+.heatmap-wrap{overflow-x:auto;padding-bottom:4px}
+.heatmap-grid{display:flex;gap:3px}
+.heatmap-week{display:flex;flex-direction:column;gap:3px}
+.hm-cell{width:13px;height:13px;border-radius:2px;cursor:pointer;flex-shrink:0}
+.heatmap-months{display:flex;gap:0;margin-bottom:4px;font-size:10px;color:var(--text3)}
+
+/* ─── RADAR CAPES ─── */
+.radar-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.radar-theme{background:var(--bg2);border-radius:var(--r);padding:10px 12px}
+.radar-theme-label{font-size:12px;font-weight:500;margin-bottom:6px}
+.radar-bar-row{display:flex;align-items:center;gap:7px;margin-bottom:4px;font-size:11px}
+.radar-bar-fill{height:6px;border-radius:3px}
+
+/* ─── BADGES ─── */
+.badge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:12px}
+.badge-card{border:0.5px solid var(--border);border-radius:var(--r);padding:10px 12px;text-align:center;position:relative}
+.badge-card.unlocked{border-color:#97c459;background:#eaf3de}
+.badge-card.locked{opacity:.45}
+.badge-icon{font-size:24px;margin-bottom:4px}
+.badge-name{font-size:12px;font-weight:500}
+.badge-crit{font-size:11px;color:var(--text2);margin-top:2px}
+.badge-date{font-size:10px;color:#639922;margin-top:2px}
+
 /* ─── DEADLINES BANNER ─── */
 .deadlines-banner{background:var(--warn-bg);border-bottom:0.5px solid var(--warn-border);padding:8px 20px;display:none}
 .deadline-item{font-size:12px;color:var(--warn-text);display:flex;align-items:center;gap:8px;padding:2px 0}
@@ -249,12 +306,61 @@ textarea{resize:vertical;min-height:56px}
 <!-- ─── DEADLINES BANNER ─── -->
 <div class="deadlines-banner" id="deadlines-banner"></div>
 
+<!-- ─── FAB saisie rapide ─── -->
+<button class="quick-fab" onclick="openQuickEntry()" title="Saisie rapide du jour">+</button>
+
+<!-- ─── QUICK ENTRY MODAL ─── -->
+<div class="quick-overlay" id="quick-overlay" onclick="if(event.target===this)closeQuickEntry()">
+  <div class="quick-modal">
+    <button class="quick-close" onclick="closeQuickEntry()">×</button>
+    <div class="quick-title">Saisie rapide <span id="qe-date-label" style="font-size:14px;font-weight:400;color:var(--text2)"></span></div>
+    <div class="quick-section">
+      <div class="quick-lbl">Humeur</div>
+      <div class="quick-mood-row" id="qe-mood-row"></div>
+    </div>
+    <div class="quick-section">
+      <div class="quick-lbl">Énergie — <span id="qe-energy-val">5</span>/10</div>
+      <input type="range" min="1" max="10" step="1" value="5" id="qe-energy" oninput="document.getElementById('qe-energy-val').textContent=this.value" style="width:100%;accent-color:var(--text)">
+    </div>
+    <div class="quick-section">
+      <div class="quick-lbl">Teralite</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap" id="qe-med-row">
+        <button class="qmb" onclick="qeSetMed('pris',this)">pris</button>
+        <button class="qmb" onclick="qeSetMed('oublie',this)">oublié</button>
+        <button class="qmb" onclick="qeSetMed('decale',this)">décalé</button>
+      </div>
+    </div>
+    <div class="quick-section">
+      <div class="quick-lbl">Qualité de la journée</div>
+      <div id="qe-quality-row" style="display:flex;gap:6px;font-size:24px"></div>
+    </div>
+    <div class="quick-section">
+      <div class="quick-lbl">Note courte (optionnel)</div>
+      <input type="text" id="qe-note" placeholder="En deux mots…" style="font-size:13px;padding:7px 10px;border:0.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;width:100%">
+    </div>
+    <button class="quick-save-btn" onclick="saveQuickEntry()">Sauvegarder</button>
+  </div>
+</div>
+
+<!-- ─── SEARCH OVERLAY ─── -->
+<div class="quick-overlay" id="search-overlay" onclick="if(event.target===this)closeSearch()">
+  <div class="quick-modal">
+    <button class="quick-close" onclick="closeSearch()">×</button>
+    <div class="quick-title">Recherche dans le journal</div>
+    <div class="search-bar">
+      <input type="text" class="search-input" id="search-input" placeholder="Mot-clé, événement, note…" oninput="runSearch(this.value)">
+    </div>
+    <div id="search-results"><div style="font-size:13px;color:var(--text3)">Tape pour rechercher.</div></div>
+  </div>
+</div>
+
 <div class="tabs">
   <button class="tab active" onclick="showTab('cal',this)">Calendrier</button>
   <button class="tab" onclick="showTab('stats',this)">Statistiques</button>
   <button class="tab" onclick="showTab('sport',this)">Bilan sport</button>
   <button class="tab" onclick="showTab('projets',this)">Projets</button>
   <button class="tab" onclick="showTab('deadlines',this)">Échéances</button>
+  <button class="tab" onclick="openSearch()" style="margin-left:auto">🔍</button>
 </div>
 
 <!-- ═══════════════ CALENDRIER ═══════════════ -->
@@ -263,7 +369,10 @@ textarea{resize:vertical;min-height:56px}
     <div class="cal-nav">
       <button class="cal-nav-btn" onclick="changeMonth(-1)">&#8592;</button>
       <span class="month-label" id="month-label"></span>
-      <button class="cal-nav-btn" onclick="changeMonth(1)">&#8594;</button>
+      <div style="display:flex;gap:6px">
+        <button class="cal-nav-btn" style="font-size:11px;padding:5px 9px" onclick="goToToday()">Auj.</button>
+        <button class="cal-nav-btn" onclick="changeMonth(1)">&#8594;</button>
+      </div>
     </div>
     <div class="cal-grid" id="cal-grid"></div>
     <div class="legend">
@@ -388,7 +497,11 @@ let dropboxTokenExpiresAt=+(localStorage.getItem('bj_dropbox_expires_at')||0);
 let dropboxSaveTimer=null;
 
 function loadData(){try{return JSON.parse(localStorage.getItem('bj_v7')||'{}')}catch(e){return {}}}
-function saveData(){localStorage.setItem('bj_v7',JSON.stringify(DATA));scheduleDropboxSave();}
+function saveData(){
+  DATA.__savedAt=new Date().toISOString();
+  localStorage.setItem('bj_v7',JSON.stringify(DATA));
+  scheduleDropboxSave();
+}
 let DATA=loadData();
   /* ── Échéances modifiables ── */
 function getDeadlines(){
@@ -451,7 +564,27 @@ async function syncFromDropbox(){
     updateDropboxButton('Lecture…',true);
     const res=await dropboxApi('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{'Dropbox-API-Arg':JSON.stringify({path:DROPBOX_FILE_PATH})}});
     const remote=JSON.parse(await res.text());
-    if(remote&&typeof remote==='object'){DATA=remote;localStorage.setItem('bj_v7',JSON.stringify(DATA));renderCal();renderStats();updateDropboxButton('Synchronisé',true);}
+    if(remote&&typeof remote==='object'){
+      /* Résolution de conflits par timestamp */
+      const remoteTs=remote.__savedAt?new Date(remote.__savedAt):new Date(0);
+      const localTs=DATA.__savedAt?new Date(DATA.__savedAt):new Date(0);
+      if(remoteTs>localTs){
+        /* Remote plus récent — fusion entry par entry */
+        const merged={...DATA};
+        Object.entries(remote).forEach(([k,v])=>{
+          if(k.match(/^\d{4}-\d{2}-\d{2}$/)&&v){
+            const rd=v.__ts?new Date(v.__ts):remoteTs;
+            const ld=(DATA[k]&&DATA[k].__ts)?new Date(DATA[k].__ts):localTs;
+            if(!DATA[k]||rd>=ld)merged[k]=v;
+          } else if(k.startsWith('__')){merged[k]=v;}
+        });
+        DATA=merged;
+        localStorage.setItem('bj_v7',JSON.stringify(DATA));
+        renderCal();renderStats();updateDropboxButton('Synchronisé ✓',true);
+      } else {
+        updateDropboxButton('Local à jour',true);
+      }
+    }
   }catch(e){const msg=String(e.message||e);if(msg.includes('path/not_found')){await uploadDropboxFile();return;}console.error(e);updateDropboxButton('Erreur lecture',false);}
 }
 async function uploadDropboxFile(){
@@ -496,19 +629,238 @@ function setQuality(k,v){
 }
 function qualityLabel(n){return ['','Difficile','Ordinaire','Correct','Bonne journée','Excellente'][n||0]||'';}
 
-/* ── Streaks ── */
+/* ── Streak avec date record ── */
 function calcStreak(fn){
   const keys=Object.keys(DATA).filter(k=>k.match(/^\d{4}-\d{2}-\d{2}$/)).sort();
-  let cur=0,max=0,prev=null;
+  let cur=0,max=0,maxEndDate='',prev=null;
   keys.forEach(k=>{
     if(k.startsWith('__'))return;
     const d=DATA[k];if(!d)return;
     const dt=parseDateKey(k);
     if(prev){const diff=Math.round((dt-prev)/86400000);if(diff===1&&fn(d)){cur++;}else{cur=fn(d)?1:0;}}
     else{cur=fn(d)?1:0;}
-    prev=dt;max=Math.max(max,cur);
+    prev=dt;
+    if(cur>max){max=cur;maxEndDate=k;}
   });
-  return{cur,max};
+  return{cur,max,maxEndDate};
+}
+
+/* ── Navigation calendrier ── */
+function goToToday(){curYear=now.getFullYear();curMonth=now.getMonth();renderCal();}
+
+/* ════════════════════════════════════════════════
+   SAISIE RAPIDE
+   ════════════════════════════════════════════════ */
+let qeMood=null,qeMedStatus=null,qeQuality=0;
+function openQuickEntry(){
+  const todayKey=dk(now.getFullYear(),now.getMonth(),now.getDate());
+  const day=DATA[todayKey]||{};
+  qeMood=day.mood||null;qeMedStatus=day.medStatus||null;qeQuality=day.quality||0;
+  document.getElementById('qe-date-label').textContent='— '+now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+  /* mood buttons */
+  const mr=document.getElementById('qe-mood-row');
+  mr.innerHTML=MOODS.map(m=>`<button class="qmb${qeMood===m.k?' sel-'+m.k:''}" onclick="qeSetMood('${m.k}',this)">${m.l}</button>`).join('');
+  /* energy */
+  const eSlider=document.getElementById('qe-energy');
+  eSlider.value=day.energy||5;
+  document.getElementById('qe-energy-val').textContent=eSlider.value;
+  /* med */
+  document.querySelectorAll('#qe-med-row .qmb').forEach(b=>{b.className='qmb';if(b.textContent.trim()===qeMedStatus||b.onclick?.toString().includes(qeMedStatus))b.className='qmb sel-ok';});
+  /* quality */
+  renderQeQuality(qeQuality);
+  /* note */
+  document.getElementById('qe-note').value=day.quickNote||'';
+  document.getElementById('quick-overlay').classList.add('open');
+}
+function closeQuickEntry(){document.getElementById('quick-overlay').classList.remove('open');}
+function qeSetMood(m,btn){qeMood=m;btn.closest('.quick-mood-row').querySelectorAll('.qmb').forEach(b=>b.className='qmb');btn.className=`qmb sel-${m}`;}
+function qeSetMed(s,btn){qeMedStatus=s;btn.closest('div').querySelectorAll('.qmb').forEach(b=>b.className='qmb');btn.className='qmb sel-ok';}
+function renderQeQuality(n){
+  const row=document.getElementById('qe-quality-row');
+  row.innerHTML='';
+  for(let i=1;i<=5;i++){
+    const span=document.createElement('span');
+    span.textContent=i<=n?'★':'☆';
+    span.style.cursor='pointer';
+    span.style.color=i<=n?'#ba7517':'var(--border2)';
+    span.onclick=(()=>{const v=i;return ()=>{qeQuality=v;renderQeQuality(v);}})();
+    row.appendChild(span);
+  }
+}
+function saveQuickEntry(){
+  const todayKey=dk(now.getFullYear(),now.getMonth(),now.getDate());
+  const day=initDay(todayKey);
+  if(qeMood)day.mood=qeMood;
+  const ev=document.getElementById('qe-energy').value;
+  if(ev)day.energy=+ev;
+  if(qeMedStatus)day.medStatus=qeMedStatus;
+  if(qeQuality)day.quality=qeQuality;
+  const note=document.getElementById('qe-note').value.trim();
+  if(note)day.quickNote=note;
+  saveData();renderCal();
+  closeQuickEntry();
+}
+
+/* ════════════════════════════════════════════════
+   RECHERCHE
+   ════════════════════════════════════════════════ */
+function openSearch(){document.getElementById('search-overlay').classList.add('open');setTimeout(()=>document.getElementById('search-input').focus(),100);}
+function closeSearch(){document.getElementById('search-overlay').classList.remove('open');}
+function highlight(text,q){if(!q)return text;const re=new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');return text.replace(re,'<span class="search-highlight">$1</span>');}
+function runSearch(q){
+  const el=document.getElementById('search-results');
+  if(!q||q.length<2){el.innerHTML='<div style="font-size:13px;color:var(--text3)">Tape au moins 2 caractères.</div>';return;}
+  const ql=q.toLowerCase();
+  const results=[];
+  Object.entries(DATA).filter(([k])=>k.match(/^\d{4}-\d{2}-\d{2}$/)).forEach(([k,d])=>{
+    if(!d)return;
+    const fields=[d.journal,d.event,d.quickNote,d.capesNote,d.mentalNote,d.travailNote,d.mealDesc,d.ecriture?.roman?.note,d.ecriture?.poesie?.note].filter(Boolean).join(' ');
+    if(fields.toLowerCase().includes(ql)){
+      const snippet=fields.slice(Math.max(0,fields.toLowerCase().indexOf(ql)-30),fields.toLowerCase().indexOf(ql)+80);
+      results.push({k,snippet});
+    }
+  });
+  if(!results.length){el.innerHTML='<div style="font-size:13px;color:var(--text3)">Aucun résultat.</div>';return;}
+  el.innerHTML=results.slice(0,20).map(r=>`
+    <div class="search-result" onclick="closeSearch();const p=parseDateKey('${r.k}');curYear=p.getFullYear();curMonth=p.getMonth();openDay('${r.k}',p.getDate());renderCal()">
+      <div class="search-result-date">${parseDateKey(r.k).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+      <div class="search-result-snippet">${highlight(r.snippet,q)}…</div>
+    </div>`).join('');
+}
+
+/* ════════════════════════════════════════════════
+   HEATMAP ANNUELLE
+   ════════════════════════════════════════════════ */
+function renderHeatmap(year){
+  const start=new Date(year,0,1);const end=new Date(year,11,31);
+  const startDow=(start.getDay()+6)%7;
+  let html='<div class="heatmap-wrap"><div class="heatmap-grid">';
+  /* pad first week */
+  let week='<div class="heatmap-week">';
+  for(let i=0;i<startDow;i++) week+=`<div class="hm-cell" style="background:transparent"></div>`;
+  let cur=new Date(start);
+  while(cur<=end){
+    const k=dk(cur.getFullYear(),cur.getMonth(),cur.getDate());
+    const d=DATA[k]||{};
+    const q=d.quality||0;
+    const col=q===5?'#1d9e75':q===4?'#639922':q===3?'#a3cf6f':q===2?'#f0c040':q===1?'#e24b4a':'var(--bg3)';
+    const dow=(cur.getDay()+6)%7;
+    if(dow===0&&cur.getTime()!==start.getTime()){html+=week+'</div>';week='<div class="heatmap-week">';}
+    week+=`<div class="hm-cell" style="background:${col}" title="${k} · ${qualityLabel(q)||'non renseigné'}" onclick="const p=parseDateKey('${k}');curYear=p.getFullYear();curMonth=p.getMonth();showTab('cal',document.querySelector('.tab'));openDay('${k}',p.getDate());renderCal()"></div>`;
+    cur.setDate(cur.getDate()+1);
+  }
+  html+=week+'</div></div>';
+  /* legend */
+  html+=`<div style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:var(--text2)">Qualité :
+    <div class="hm-cell" style="background:#e24b4a"></div><span>Difficile</span>
+    <div class="hm-cell" style="background:#f0c040"></div><span>Ordinaire</span>
+    <div class="hm-cell" style="background:#a3cf6f"></div><span>Correct</span>
+    <div class="hm-cell" style="background:#639922"></div><span>Bonne</span>
+    <div class="hm-cell" style="background:#1d9e75"></div><span>Excellente</span>
+  </div></div>`;
+  return html;
+}
+
+/* ════════════════════════════════════════════════
+   RADAR COUVERTURE CAPES
+   ════════════════════════════════════════════════ */
+function renderCapesRadar(allFiches,allCapesBooks,allCapesArticles,targetFiches){
+  const themes=['Histoire Romaine','Histoire Christianisme','Histoire Coloniale','Géographie Pacifique','Géographie Environnement','Géographie Littoral'];
+  const counts={};themes.forEach(t=>{counts[t]={fiches:0,livres:0,articles:0,travailMin:0};});
+  allFiches.forEach(f=>{if(counts[f.label])counts[f.label].fiches++;});
+  allCapesBooks.forEach(b=>{if(counts[b.label])counts[b.label].livres++;});
+  allCapesArticles.forEach(a=>{if(counts[a.label])counts[a.label].articles++;});
+  const maxFiches=Math.max(1,...Object.values(counts).map(c=>c.fiches));
+  let html='<div class="radar-wrap">';
+  themes.forEach(t=>{
+    const c=counts[t];const pct=Math.round(c.fiches/maxFiches*100);
+    const color=pct>=75?'#1d9e75':pct>=50?'#639922':pct>=25?'#f0c040':'#e24b4a';
+    html+=`<div class="radar-theme">
+      <div class="radar-theme-label">${t}</div>
+      <div class="radar-bar-row">
+        <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
+          <div class="radar-bar-fill" style="width:${pct}%;background:${color}"></div>
+        </div>
+        <span style="min-width:24px;text-align:right;font-weight:500">${c.fiches}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2)">${c.livres} livre${c.livres!==1?'s':''} · ${c.articles} article${c.articles!==1?'s':''}</div>
+    </div>`;
+  });
+  html+='</div>';
+  /* progression vers objectif */
+  const totalFiches=allFiches.length;
+  const obj=targetFiches||100;
+  const pctObj=Math.min(100,Math.round(totalFiches/obj*100));
+  const remaining=Math.max(0,obj-totalFiches);
+  html+=`<div class="add-item" style="margin-top:8px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <div style="font-size:13px;font-weight:500">Objectif fiches CAPES</div>
+      <span style="font-size:11px;color:var(--text2)">${totalFiches} / ${obj}</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="background:#d4537e;width:${pctObj}%"></div></div>
+    <div style="font-size:12px;color:var(--text2)">${remaining} fiche${remaining!==1?'s':''} restante${remaining!==1?'s':''} · à ce rythme : voir les stats</div>
+  </div>`;
+  return html;
+}
+
+/* ════════════════════════════════════════════════
+   PEARSON CORRELATION (réelle, sur les données)
+   ════════════════════════════════════════════════ */
+function pearson(xs,ys){
+  const pairs=xs.map((x,i)=>[x,ys[i]]).filter(([a,b])=>a!==null&&b!==null&&a!==undefined&&b!==undefined);
+  if(pairs.length<4)return null;
+  const n=pairs.length;
+  const mx=pairs.reduce((a,[x])=>a+x,0)/n,my=pairs.reduce((a,[,y])=>a+y,0)/n;
+  let num=0,dx2=0,dy2=0;
+  pairs.forEach(([x,y])=>{const a=x-mx,b=y-my;num+=a*b;dx2+=a*a;dy2+=b*b;});
+  const denom=Math.sqrt(dx2*dy2);
+  return denom<1e-10?null:Math.round(num/denom*100)/100;
+}
+function moodNum(m){return{vl:1,l:2,n:3,g:4,vg:5,h:6}[m]||null;}
+
+/* ════════════════════════════════════════════════
+   BADGES / JALONS
+   ════════════════════════════════════════════════ */
+function computeBadges(){
+  const allEntries=Object.entries(DATA).filter(([k])=>k.match(/^\d{4}-\d{2}-\d{2}$/));
+  const allDays=allEntries.map(([,d])=>d);
+  const totalRomanMots=allDays.reduce((a,d)=>a+(d.ecriture?.roman?.mots||0),0);
+  const totalFiches=allDays.reduce((a,d)=>a+(d.capesFichesList?.length||0),0);
+  const totalSportMin=allDays.reduce((a,d)=>{if(!d.sportData)return a;return a+Object.values(d.sportData).reduce((b,sd)=>b+parseSportNumber(sd['durée (min)']),0);},0);
+  const totalSportH=Math.floor(totalSportMin/60);
+  const daysWithEntry=allDays.filter(d=>d.mood||d.energy||d.ecriture?.roman?.mots||d.sport?.length).length;
+  const noCocaDays=allDays.filter(d=>!d.cocaMl&&d.coca!==true).length;
+  const sportStreak=calcStreak(d=>d.sport&&d.sport.length>0);
+  const BADGES=[
+    {id:'b1',icon:'📖',name:'Premier pas',crit:'1ère entrée renseignée',check:()=>daysWithEntry>=1},
+    {id:'b2',icon:'📅',name:'Mois complet',crit:'30 entrées au moins',check:()=>daysWithEntry>=30},
+    {id:'b3',icon:'🗓️',name:'Un an de bord',crit:'365 entrées',check:()=>daysWithEntry>=365},
+    {id:'b4',icon:'✍️',name:'Plume active',crit:'10 000 mots écrits',check:()=>totalRomanMots>=10000},
+    {id:'b5',icon:'📚',name:'Demi-roman',crit:'40 000 mots',check:()=>totalRomanMots>=40000},
+    {id:'b6',icon:'🏛️',name:'Roman terminé',crit:'80 000 mots',check:()=>totalRomanMots>=80000},
+    {id:'b7',icon:'🏃',name:'En mouvement',crit:'10 séances de sport',check:()=>sportStreak.max>=10},
+    {id:'b8',icon:'💪',name:'100 heures de sueur',crit:'100 h de sport cumulées',check:()=>totalSportH>=100},
+    {id:'b9',icon:'🔥',name:'Série de feu',crit:'Streak sport 14 jours',check:()=>sportStreak.max>=14},
+    {id:'b10',icon:'🎓',name:'Ficheur acharné',crit:'50 fiches CAPES',check:()=>totalFiches>=50},
+    {id:'b11',icon:'🏆',name:'Centurion CAPES',crit:'100 fiches CAPES',check:()=>totalFiches>=100},
+    {id:'b12',icon:'💧',name:'Sobre héros',crit:'30 jours sans coca',check:()=>noCocaDays>=30},
+  ];
+  return BADGES.map(b=>({...b,unlocked:b.check()}));
+}
+function renderBadges(){
+  const badges=computeBadges();
+  const unlocked=badges.filter(b=>b.unlocked);
+  let html=`<div style="font-size:12px;color:var(--text2);margin-bottom:8px">${unlocked.length}/${badges.length} badges débloqués</div>`;
+  html+='<div class="badge-grid">';
+  badges.forEach(b=>{
+    html+=`<div class="badge-card ${b.unlocked?'unlocked':'locked'}">
+      <div class="badge-icon">${b.icon}</div>
+      <div class="badge-name">${b.name}</div>
+      <div class="badge-crit">${b.crit}</div>
+    </div>`;
+  });
+  html+='</div>';
+  return html;
 }
 
 /* ════════════════════════════════════════════════
@@ -585,7 +937,9 @@ function renderCal(){
     if(day.mood)dots+=`<div class="dot" style="background:${moodCol(day.mood)}"></div>`;
     if(day.sport&&day.sport.length)dots+=`<div class="dot" style="background:#185fa5"></div>`;
     const ec=day.ecriture;if(ec&&((ec.roman&&(ec.roman.mots||ec.roman.pages))||(ec.poesie&&ec.poesie.mots)))dots+=`<div class="dot" style="background:#7f77dd"></div>`;
-    if(day.fiches||day.capesNote)dots+=`<div class="dot" style="background:#d4537e"></div>`;
+    if(day.fiches||day.capesNote||(day.capesFichesList&&day.capesFichesList.length))dots+=`<div class="dot" style="background:#d4537e"></div>`;
+    if(day.medStatus==='oublié')dots+=`<div class="dot" style="background:#e24b4a;border:1px solid #a32d2d" title="Teralite oublié"></div>`;
+    else if(day.medStatus==='décalé')dots+=`<div class="dot" style="background:#ba7517" title="Teralite décalé"></div>`;
     if(hasDl)dots+=`<div class="deadline-dot"></div>`;
     if(dayDeadlines.length){
     el.title=dayDeadlines.map(dl=>`${dl.label} — ${dl.category||'échéance'}`).join('\n');
@@ -652,11 +1006,7 @@ function secMental(d,k){
     ${stressRow('stressTravail','Stress — Travail (1=nul · 5=intense)',stW)}
     ${stressRow('stressSocial','Stress — Social (1=nul · 5=intense)',stS)}
     <div class="two">
-      <div class="fl"><div class="lbl">Médicament</div><input type="text" id="med-name-${k}" placeholder="ex: Lamictal" value="${d.medName||''}"></div>
-      <div class="fl"><div class="lbl">Posologie</div><input type="text" id="med-dose-${k}" placeholder="ex: 200mg" value="${d.medDose||''}"></div>
-    </div>
-    <div class="two">
-      <div class="fl"><div class="lbl">Heure de prise</div><input type="time" id="med-time-${k}" value="${d.medTime||''}"></div>
+      <div class="fl"><div class="lbl">Teralite — heure de prise</div><input type="time" id="med-time-${k}" value="${d.medTime||''}"></div>
       <div class="fl"><div class="lbl">Statut</div><div class="mood-btns" style="margin-top:4px">
         ${['pris','oublié','décalé'].map(s=>`<button class="mb${d.medStatus===s?' sel-ok':''}" onclick="initDay('${k}').medStatus='${s}';this.closest('.mood-btns').querySelectorAll('.mb').forEach(b=>b.className='mb');this.className='mb sel-ok'">${s}</button>`).join('')}
       </div></div>
@@ -1094,7 +1444,7 @@ function collectSheet(k){
   const set=(id,field,parse)=>{const el=g(id);if(el&&el.value!=='')day[field]=parse?parse(el.value):el.value;};
   set('mn-','mentalNote');set('jn-','journal');set('cn-','capesNote');
   set('ev-k-','event');set('act-','activity');set('travailNote-','travailNote');
-  set('med-name-','medName');set('med-dose-','medDose');set('med-time-','medTime');set('meal-desc-','mealDesc');
+  set('med-time-','medTime');set('meal-desc-','mealDesc');
   /* écriture */
   const ec=day.ecriture=day.ecriture||{roman:{},poesie:{}};
   const rv=id=>document.getElementById(id+k);
@@ -1110,7 +1460,9 @@ function collectSheet(k){
   if(rv('ec-p-note-'))ec.poesie.note=rv('ec-p-note-').value;
 }
 function saveDay(k){
-  collectSheet(k);saveData();renderCal();
+  collectSheet(k);
+  initDay(k).__ts=new Date().toISOString();
+  saveData();renderCal();
   const m=document.getElementById('smsg-'+k);m.style.display='block';setTimeout(()=>m.style.display='none',2000);
 }
 
@@ -1406,6 +1758,62 @@ const chartArticlesRepId='chart-articles-rep-'+Date.now();
 const chartArticlesStatusId='chart-articles-status-'+Date.now();
 const healthChartId='health-chart';
 
+  /* ── corrélations Pearson réelles ── */
+  const allEntriesAll=Object.entries(DATA).filter(([k])=>k.match(/^\d{4}-\d{2}-\d{2}$/)).sort(([a],[b])=>a.localeCompare(b));
+  function corrPair(fnX,fnY){
+    const xs=allEntriesAll.map(([,d])=>fnX(d));
+    const ys=allEntriesAll.map(([,d])=>fnY(d));
+    return pearson(xs,ys);
+  }
+  const corrSleepMood=corrPair(d=>sleepHoursForStats(d),d=>moodNum(d.mood));
+  const corrSportMood=corrPair(d=>sportMinutesForStats(d),d=>moodNum(d.mood));
+  const corrSportEnergy=corrPair(d=>sportMinutesForStats(d),d=>d.energy||null);
+  const corrStressTMood=corrPair(d=>d.stressTravail||null,d=>moodNum(d.mood));
+  const corrStressSMood=corrPair(d=>d.stressSocial||null,d=>moodNum(d.mood));
+  const corrMedMood=corrPair(d=>d.medStatus==='pris'?1:d.medStatus?0:null,d=>moodNum(d.mood));
+  const corrEcritureEnergy=corrPair(d=>(d.ecriture?.roman?.mots||0)+(d.ecriture?.poesie?.mots||0)||null,d=>d.energy||null);
+  const corrSocialMood=corrPair(d=>(d.socialMeetings?.length||0)||null,d=>moodNum(d.mood));
+  const corrCocaQuality=corrPair(d=>d.cocaMl>0?1:d.coca===false?0:null,d=>d.quality||null);
+  const corrSleepEnergy=corrPair(d=>sleepHoursForStats(d),d=>d.energy||null);
+  const corrStressTEnergy=corrPair(d=>d.stressTravail||null,d=>d.energy||null);
+  const corrCapesStress=corrPair(d=>(d.capesFichesList?.length||0)||null,d=>d.stressTravail||null);
+
+  function corrRow(label,val){
+    if(val===null)return '';
+    const pos=val>=0;
+    return `<div class="corr-row"><span style="flex:1">${label}</span><div class="cbar-w"><div class="cbar" style="width:${Math.round(Math.abs(val)*100)}%;background:${pos?'#1d9e75':'#e24b4a'}"></div></div><span style="min-width:44px;text-align:right;color:${pos?'#1d9e75':'#e24b4a'};font-weight:500">${pos?'+':''}${val.toFixed(2)}</span></div>`;
+  }
+  const corrHtml=[
+    corrRow('Sommeil → humeur',corrSleepMood),
+    corrRow('Sommeil → énergie',corrSleepEnergy),
+    corrRow('Sport → humeur',corrSportMood),
+    corrRow('Sport → énergie',corrSportEnergy),
+    corrRow('Stress travail → humeur',corrStressTMood),
+    corrRow('Stress travail → énergie',corrStressTEnergy),
+    corrRow('Stress social → humeur',corrStressSMood),
+    corrRow('Teralite pris → humeur',corrMedMood),
+    corrRow('Écriture → énergie',corrEcritureEnergy),
+    corrRow('Rencontres sociales → humeur',corrSocialMood),
+    corrRow('Coca → qualité journée',corrCocaQuality),
+    corrRow('Travail CAPES → stress travail',corrCapesStress),
+  ].filter(Boolean).join('');
+  const corrNote=allEntriesAll.length<10?'<div style="font-size:11px;color:var(--text3);margin-top:6px">Les corrélations se renforcent avec le temps — moins de 10 entrées pour l\'instant.</div>':'<div style="font-size:11px;color:var(--text3);margin-top:6px">Calculé sur l\'ensemble des entrées ('+allEntriesAll.length+' jours). Coefficient de Pearson.</div>';
+
+  /* ── CAPES encart temps par thème depuis travailTodos ── */
+  const capesThemeTime={};
+  CAPES_LABELS.filter(l=>l.startsWith('Histoire')||l.startsWith('Géographie')).forEach(l=>{capesThemeTime[l]=0;});
+  /* on utilise les fiches comme proxy du temps par thème */
+  allFiches.forEach(f=>{if(capesThemeTime[f.label]!==undefined)capesThemeTime[f.label]+=15;/* ~15min par fiche estimée */});
+  const maxThemeMin=Math.max(1,...Object.values(capesThemeTime));
+  const capesTempsHtml=Object.entries(capesThemeTime).length?`<div style="margin-top:8px">`+Object.entries(capesThemeTime).map(([t,min])=>{
+    const h=Math.floor(min/60),m=min%60;
+    return `<div class="sport-bar-row"><span class="sport-bar-name" style="min-width:150px;font-size:11px">${t}</span><div class="sport-bar-wrap"><div class="sport-bar-fill" style="width:${Math.round(min/maxThemeMin*100)}%;background:#d4537e"></div></div><span class="sport-bar-val" style="color:#d4537e;font-size:11px">${h>0?h+'h':''}${m>0?m+'min':'—'}</span></div>`;
+  }).join('')+`</div>`:'';
+
+  /* ── objectif fiches CAPES ── */
+  const capesObjKey='__capesObj';
+  const capesObj=DATA[capesObjKey]||100;
+
   document.getElementById('stat-content').innerHTML=`
   <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Période : ${label} · ${allDays.length} jour${allDays.length!==1?'s':''} renseigné${allDays.length!==1?'s':''}</div>
 
@@ -1422,11 +1830,11 @@ const healthChartId='health-chart';
       </select>
     </div>
     <div class="chips">
-      ${[['sleep','Sommeil'],['mood','Humeur'],['med','Médicaments'],['stressT','Stress travail'],['stressS','Stress social'],['energy','Énergie'],['sport','Sport']].map(([key,label])=>`<label class="chip${healthVisible[key]?' sel':''}" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" ${healthVisible[key]?'checked':''} onchange="toggleHealthSeries('${key}',this)" style="width:auto">${label}</label>`).join('')}
+      ${[['sleep','Sommeil'],['mood','Humeur'],['med','Teralite'],['stressT','Stress travail'],['stressS','Stress social'],['energy','Énergie'],['sport','Sport']].map(([key,lbl2])=>`<label class="chip${healthVisible[key]?' sel':''}" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" ${healthVisible[key]?'checked':''} onchange="toggleHealthSeries('${key}',this)" style="width:auto">${lbl2}</label>`).join('')}
     </div>
-    <div style="font-size:11px;color:var(--text3)">Axes : humeur/stress/énergie à gauche, heures à droite, sport en minutes au survol.</div>
+    <div style="font-size:11px;color:var(--text3)">Axes : humeur/stress/énergie à gauche, heures à droite.</div>
   </div>
-  <div class="chart-wrap" style="height:300px;margin-bottom:14px"><canvas id="${healthChartId}" role="img" aria-label="Suivi santé modulable">Suivi santé.</canvas></div>
+  <div class="chart-wrap" style="height:300px;margin-bottom:14px"><canvas id="health-chart" role="img" aria-label="Suivi santé modulable">Suivi santé.</canvas></div>
 
   <div class="stat-grid">
     <div class="sc"><div class="sc-label">Énergie moyenne</div><div class="sc-val">${avgE||'—'}</div><div class="sc-sub">sur 10</div></div>
@@ -1443,10 +1851,17 @@ const healthChartId='health-chart';
 
   ${warns.map(w=>`<div class="warn-box">${w}</div>`).join('')}
 
+  <div class="stitle">Heatmap annuelle <span class="stitle-badge">${now.getFullYear()}</span></div>
+  ${renderHeatmap(now.getFullYear())}
+
   <div class="stitle">Séries (streaks) <span class="stitle-badge">gamification</span></div>
-  <div class="streak-row"><span class="streak-fire">🔥</span><span class="streak-val">${sportStreak.cur}</span><span class="streak-lbl">jours de sport consécutifs</span><span class="streak-max">record : ${sportStreak.max}j</span></div>
+  <div class="streak-row"><span class="streak-fire">🔥</span><span class="streak-val">${sportStreak.cur}</span><span class="streak-lbl">jours de sport consécutifs</span><span class="streak-max">record : ${sportStreak.max}j${sportStreak.maxEndDate?' ('+sportStreak.maxEndDate+')':''}</span></div>
   <div class="streak-row"><span class="streak-fire">✍️</span><span class="streak-val">${ecritureStreak.cur}</span><span class="streak-lbl">jours d'écriture consécutifs</span><span class="streak-max">record : ${ecritureStreak.max}j</span></div>
   <div class="streak-row"><span class="streak-fire">💧</span><span class="streak-val">${sportStreak7.cur}</span><span class="streak-lbl">jours sans coca</span><span class="streak-max">record : ${sportStreak7.max}j</span></div>
+  <div class="streak-row"><span class="streak-fire">🎓</span><span class="streak-val">${calcStreak(d=>d.capesFichesList?.length>0||d.capesNote).cur}</span><span class="streak-lbl">jours de travail CAPES consécutifs</span><span class="streak-max">record : ${calcStreak(d=>d.capesFichesList?.length>0||d.capesNote).max}j</span></div>
+
+  <div class="stitle">Badges <span class="stitle-badge">jalons débloqués</span></div>
+  ${renderBadges()}
 
   <div class="stitle">Projets <span class="stitle-badge">${activeProj.length} actifs · ${closedProj.length} terminés</span></div>
   <div class="stat-grid">
@@ -1463,7 +1878,7 @@ const healthChartId='health-chart';
 
   <div class="stitle">Écriture <span class="stitle-badge">roman + poésie</span></div>
   <div class="stat-grid">
-    <div class="sc"><div class="sc-label">Mots roman</div><div class="sc-val">${totalRomanMots.toLocaleString('fr-FR')}</div></div>
+    <div class="sc"><div class="sc-label">Mots roman</div><div class="sc-val">${totalRomanMots.toLocaleString('fr-FR')}</div><div class="sc-sub">≈ ${Math.round(totalRomanMots/80000*10)/10} roman de Zola</div></div>
     <div class="sc"><div class="sc-label">Pages roman</div><div class="sc-val">${totalRomanPages}</div></div>
     <div class="sc"><div class="sc-label">Poèmes</div><div class="sc-val">${totalPoemes}</div></div>
     <div class="sc"><div class="sc-label">Mots poésie</div><div class="sc-val">${totalPoesieMots.toLocaleString('fr-FR')}</div></div>
@@ -1475,11 +1890,19 @@ const healthChartId='health-chart';
   ${kmCourse>0?`<div class="stitle">Équivalences fun <span class="stitle-badge">pour sourire</span></div>
   <div class="stat-grid">
     <div class="sc hl"><div class="sc-label">Km courus</div><div class="sc-val">${Math.round(kmCourse)}</div><div class="sc-sub">= ${luxPct}% de la largeur du Luxembourg</div></div>
-    <div class="sc"><div class="sc-label">Heures de sport</div><div class="sc-val">${heuresSport}</div><div class="sc-sub">≈ ${Math.round(heuresSport/24*10)/10} journées complètes</div></div>
-    <div class="sc"><div class="sc-label">Mots écrits</div><div class="sc-val">${totalRomanMots.toLocaleString('fr-FR')}</div><div class="sc-sub">≈ ${Math.round(totalRomanMots/80000*100)/100} roman${totalRomanMots>80000?'s':''} de Zola</div></div>
+    <div class="sc"><div class="sc-label">Heures de sport</div><div class="sc-val">${heuresSport}</div><div class="sc-sub">≈ ${Math.round(heuresSport/24*10)/10} journées entières</div></div>
+    <div class="sc"><div class="sc-label">Mots écrits total</div><div class="sc-val">${(totalRomanMots+totalPoesieMots).toLocaleString('fr-FR')}</div><div class="sc-sub">≈ ${Math.round((totalRomanMots+totalPoesieMots)/250)} pages imprimées</div></div>
   </div>`:''}
 
-    <div class="stitle">Bibliothèque des fiches CAPES (${allFiches.length})</div>
+  <div class="stitle">CAPES — couverture thématique</div>
+  ${renderCapesRadar(allFiches,allCapesBooks,allCapesArticles,capesObj)}
+  <div style="margin-top:8px">
+    <div class="lbl" style="margin-bottom:4px">Objectif fiches</div>
+    <input type="number" min="1" max="500" value="${capesObj}" style="width:100px;font-size:13px;padding:5px 8px;border:0.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif" oninput="DATA['__capesObj']=+this.value||100;saveData()">
+  </div>
+  ${capesTempsHtml?`<div class="stitle">Temps par thème CAPES <span class="stitle-badge">estimé via fiches</span></div>${capesTempsHtml}`:''}
+
+  <div class="stitle">Bibliothèque des fiches CAPES (${allFiches.length})</div>
   ${allFiches.length?allFiches.map(f=>`
     <div class="book-item">
       <div class="book-title">${f.title}</div>
@@ -1491,55 +1914,40 @@ const healthChartId='health-chart';
     <div class="stitle">Graphiques CAPES <span class="stitle-badge">fiches & livres</span></div>
 
   <div class="chart-wrap" style="height:220px;margin-bottom:12px">
-    <canvas id="${chartFichesRepId}" role="img" aria-label="Répartition des fiches CAPES par label">
-      Répartition des fiches CAPES par label.
-    </canvas>
+    <canvas id="${chartFichesRepId}" role="img" aria-label="Répartition des fiches CAPES par label">Répartition des fiches CAPES par label.</canvas>
   </div>
-
   <div class="chart-wrap" style="height:220px;margin-bottom:12px">
-    <canvas id="${chartFichesProdId}" role="img" aria-label="Production des fiches CAPES par date">
-      Production des fiches CAPES par date.
-    </canvas>
+    <canvas id="${chartFichesProdId}" role="img" aria-label="Production des fiches CAPES par date">Production des fiches CAPES par date.</canvas>
   </div>
-
   <div class="chart-wrap" style="height:220px;margin-bottom:12px">
-    <canvas id="${chartBooksRepId}" role="img" aria-label="Répartition des livres CAPES par label">
-      Répartition des livres CAPES par label.
-    </canvas>
+    <canvas id="${chartBooksRepId}" role="img" aria-label="Répartition des livres CAPES par label">Répartition des livres CAPES par label.</canvas>
   </div>
-
   <div class="chart-wrap" style="height:220px;margin-bottom:12px">
-    <canvas id="${chartBooksStatusId}" role="img" aria-label="Statut des livres CAPES">
-      Statut des livres CAPES.
-    </canvas>
+    <canvas id="${chartBooksStatusId}" role="img" aria-label="Statut des livres CAPES">Statut des livres CAPES.</canvas>
   </div>
-    <div class="chart-wrap" style="height:220px;margin-bottom:12px">
-    <canvas id="${chartArticlesRepId}" role="img" aria-label="Répartition des articles CAPES par label">
-      Répartition des articles CAPES par label.
-    </canvas>
-  </div>
-
   <div class="chart-wrap" style="height:220px;margin-bottom:12px">
-    <canvas id="${chartArticlesStatusId}" role="img" aria-label="Statut des articles CAPES">
-      Statut des articles CAPES.
-    </canvas>
+    <canvas id="${chartArticlesRepId}" role="img" aria-label="Répartition des articles CAPES par label">Répartition des articles CAPES par label.</canvas>
+  </div>
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px">
+    <canvas id="${chartArticlesStatusId}" role="img" aria-label="Statut des articles CAPES">Statut des articles CAPES.</canvas>
   </div>
   <div class="stitle">Bibliothèque — CAPES (${allCapesBooks.length})</div>${capesList}
+  <div class="stitle">Articles — CAPES (${allCapesArticles.length})</div>
+  ${allCapesArticles.length ? allCapesArticles.map(a=>`
+    <div class="book-item">
+      <div class="book-title">${a.title}</div>
+      <div class="book-meta">${a.author||'—'}${a.source?' · '+a.source:''}</div>
+      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:3px">
+        <span class="book-badge badge-capes">article</span>
+        ${a.label?`<span class="book-badge ${CAPES_BADGE_CLASSES[a.label]||'badge-capes'}">${a.label}</span>`:''}
+        <span style="font-size:11px;color:var(--text3)">${a.status}</span>
+        ${a.note?`<span style="font-size:11px;color:var(--text2)">— ${a.note}</span>`:''}
+      </div>
+    </div>`).join('') : '<div style="font-size:13px;color:var(--text3)">Aucun article CAPES renseigné.</div>'}
 
-<div class="stitle">Articles — CAPES (${allCapesArticles.length})</div>
-${allCapesArticles.length ? allCapesArticles.map(a=>`
-  <div class="book-item">
-    <div class="book-title">${a.title}</div>
-    <div class="book-meta">${a.author||'—'}${a.source?' · '+a.source:''}</div>
-    <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:3px">
-      <span class="book-badge badge-capes">article</span>
-      ${a.label?`<span class="book-badge ${CAPES_BADGE_CLASSES[a.label]||'badge-capes'}">${a.label}</span>`:''}
-      <span style="font-size:11px;color:var(--text3)">${a.status}</span>
-      ${a.note?`<span style="font-size:11px;color:var(--text2)">— ${a.note}</span>`:''}
-    </div>
-  </div>
-`).join('') : '<div style="font-size:13px;color:var(--text3)">Aucun article CAPES renseigné.</div>'}
-  <div class="stitle">Corrélations observées</div>${corrRows}
+  <div class="stitle">Corrélations réelles <span class="stitle-badge">Pearson sur ${allEntriesAll.length} jours</span></div>
+  ${corrHtml||'<div style="font-size:13px;color:var(--text3)">Pas assez de données pour calculer.</div>'}
+  ${corrNote}
 
   <div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap">
     <button onclick="exportJSON()" style="font-size:12px;padding:6px 13px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">Exporter JSON</button>
@@ -1549,8 +1957,6 @@ ${allCapesArticles.length ? allCapesArticles.map(a=>`
   </div>`;
 
   renderHealthChart();
-
-  /* Chart répartition du temps travail */
   const tCanvas=document.getElementById(timeId);
   if(tCanvas&&totalTravailMin>0){
     if(timeChart){timeChart.destroy();}
