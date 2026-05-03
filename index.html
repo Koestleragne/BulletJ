@@ -938,8 +938,8 @@ function renderCal(){
     if(day.sport&&day.sport.length)dots+=`<div class="dot" style="background:#185fa5"></div>`;
     const ec=day.ecriture;if(ec&&((ec.roman&&(ec.roman.mots||ec.roman.pages))||(ec.poesie&&ec.poesie.mots)))dots+=`<div class="dot" style="background:#7f77dd"></div>`;
     if(day.fiches||day.capesNote||(day.capesFichesList&&day.capesFichesList.length))dots+=`<div class="dot" style="background:#d4537e"></div>`;
-    if(day.medStatus==='oublié')dots+=`<div class="dot" style="background:#e24b4a;border:1px solid #a32d2d" title="Teralite oublié"></div>`;
-    else if(day.medStatus==='décalé')dots+=`<div class="dot" style="background:#ba7517" title="Teralite décalé"></div>`;
+    if(day.medStatus==='oublie'||day.medStatus==='oublié')dots+=`<div class="dot" style="background:#e24b4a;border:1px solid #a32d2d" title="Teralite oublié"></div>`;
+    else if(day.medStatus==='decale'||day.medStatus==='décalé')dots+=`<div class="dot" style="background:#ba7517" title="Teralite décalé"></div>`;
     if(hasDl)dots+=`<div class="deadline-dot"></div>`;
     if(dayDeadlines.length){
     el.title=dayDeadlines.map(dl=>`${dl.label} — ${dl.category||'échéance'}`).join('\n');
@@ -1008,7 +1008,7 @@ function secMental(d,k){
     <div class="two">
       <div class="fl"><div class="lbl">Teralite — heure de prise</div><input type="time" id="med-time-${k}" value="${d.medTime||''}"></div>
       <div class="fl"><div class="lbl">Statut</div><div class="mood-btns" style="margin-top:4px">
-        ${['pris','oublié','décalé'].map(s=>`<button class="mb${d.medStatus===s?' sel-ok':''}" onclick="initDay('${k}').medStatus='${s}';this.closest('.mood-btns').querySelectorAll('.mb').forEach(b=>b.className='mb');this.className='mb sel-ok'">${s}</button>`).join('')}
+        ${['pris','oublie','decale'].map((s,i)=>{const lbl=['pris','oublié','décalé'][i];return `<button class="mb${d.medStatus===s?' sel-ok':''}" onclick="initDay('${k}').medStatus='${s}';this.closest('.mood-btns').querySelectorAll('.mb').forEach(b=>b.className='mb');this.className='mb sel-ok'">${lbl}</button>`;}).join('')}
       </div></div>
     </div>
     <div class="fl"><div class="lbl">Note du jour</div><textarea id="mn-${k}" placeholder="Comment tu te sens...">${d.mentalNote||''}</textarea></div>
@@ -1842,9 +1842,12 @@ const healthChartId='health-chart';
      NOUVELLES STATS AVANCÉES
      ══════════════════════════════════════ */
 
+  /* ── Base commune : toutes les entrées triées ── */
+  const allEntriesAll=Object.entries(DATA).filter(([k])=>k.match(/^\d{4}-\d{2}-\d{2}$/)).sort(([a],[b])=>a.localeCompare(b));
+
   /* ── Corrélations décalées J+1 et J+2 ── */
   function corrLag(fnX,fnY,lag){
-    const sorted=allEntries;
+    const sorted=allEntriesAll;
     const pairs=[];
     for(let i=0;i<sorted.length-lag;i++){
       const x=fnX(sorted[i][1]);
@@ -1871,12 +1874,12 @@ const healthChartId='health-chart';
   /* ── Fenêtre glissante humeur 7 jours ── */
   const rollingId='chart-rolling-'+Date.now();
   const rollingLabels=[];const rollingData=[];
-  if(allEntries.length>=7){
-    for(let i=6;i<allEntries.length;i++){
-      const window7=allEntries.slice(i-6,i+1).map(([,d])=>d);
+  if(allEntriesAll.length>=7){
+    for(let i=6;i<allEntriesAll.length;i++){
+      const window7=allEntriesAll.slice(i-6,i+1).map(([,d])=>d);
       const moodVals=window7.map(d=>moodNum(d.mood)).filter(v=>v!==null);
       if(moodVals.length>=3){
-        rollingLabels.push(allEntries[i][0].slice(5));
+        rollingLabels.push(allEntriesAll[i][0].slice(5));
         rollingData.push(Math.round(moodVals.reduce((a,v)=>a+v,0)/moodVals.length*10)/10);
       }
     }
@@ -1886,7 +1889,7 @@ const healthChartId='health-chart';
   const dowMood=[null,null,null,null,null,null,null].map(()=>({sum:0,n:0}));// 0=lu…6=di
   const dowEnergy=[null,null,null,null,null,null,null].map(()=>({sum:0,n:0}));
   const dowWrite=[0,0,0,0,0,0,0];
-  allEntries.forEach(([k,d])=>{
+  allEntriesAll.forEach(([k,d])=>{
     const dow=(parseDateKey(k).getDay()+6)%7;
     const m=moodNum(d.mood);if(m){dowMood[dow].sum+=m;dowMood[dow].n++;}
     if(d.energy){dowEnergy[dow].sum+=d.energy;dowEnergy[dow].n++;}
@@ -1898,7 +1901,7 @@ const healthChartId='health-chart';
   const dowRadarId='chart-dow-'+Date.now();
 
   /* ── Portrait-robot meilleures journées ── */
-  const topDays=allEntries.filter(([,d])=>d.quality>=4).map(([,d])=>d);
+  const topDays=allEntriesAll.filter(([,d])=>d.quality>=4).map(([,d])=>d);
   let bestSelfHtml='<div style="font-size:13px;color:var(--text3)">Pas encore assez de journées notées 4+ étoiles.</div>';
   if(topDays.length>=3){
     const topMoodCount={};topDays.forEach(d=>{if(d.mood)topMoodCount[d.mood]=(topMoodCount[d.mood]||0)+1;});
@@ -1924,7 +1927,7 @@ const healthChartId='health-chart';
   }
 
   /* ── Indice de régularité écriture ── */
-  const writeKeys=allEntries.filter(([,d])=>d.ecriture?.roman?.mots||d.ecriture?.poesie?.mots).map(([k])=>k);
+  const writeKeys=allEntriesAll.filter(([,d])=>d.ecriture?.roman?.mots||d.ecriture?.poesie?.mots).map(([k])=>k);
   let regularityHtml='';
   if(writeKeys.length>=3){
     const intervals=[];
@@ -1973,7 +1976,7 @@ const healthChartId='health-chart';
   /* ── Dernier record par métrique ── */
   function daysSinceRecord(fn,label){
     let maxVal=-Infinity,maxKey='';
-    allEntries.forEach(([k,d])=>{const v=fn(d);if(v!==null&&v>maxVal){maxVal=v;maxKey=k;}});
+    allEntriesAll.forEach(([k,d])=>{const v=fn(d);if(v!==null&&v>maxVal){maxVal=v;maxKey=k;}});
     if(!maxKey)return '';
     const diff=Math.round((now-parseDateKey(maxKey))/86400000);
     if(diff===0)return `<div class="cal-row"><span style="flex:1;color:var(--text2)">${label}</span><span style="font-weight:500;color:#1d9e75">Record aujourd'hui !</span><span style="font-size:11px;color:var(--text3)">${Math.round(maxVal*10)/10}</span></div>`;
@@ -1988,7 +1991,7 @@ const healthChartId='health-chart';
   ].filter(Boolean).join('');
 
   /* ── Frise chronologique événements ── */
-  const timelineEntries=allEntries.filter(([,d])=>d.event&&d.event.trim()).slice(-20);
+  const timelineEntries=allEntriesAll.filter(([,d])=>d.event&&d.event.trim()).slice(-20);
   const timelineHtml=timelineEntries.length?timelineEntries.map(([k,d])=>`
     <div class="cal-row">
       <span style="min-width:70px;font-size:11px;color:var(--text3)">${parseDateKey(k).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>
@@ -2004,8 +2007,8 @@ const healthChartId='health-chart';
 
 
   function corrPair(fnX,fnY){
-    const xs=allEntries.map(([,d])=>fnX(d));
-    const ys=allEntries.map(([,d])=>fnY(d));
+    const xs=allEntriesAll.map(([,d])=>fnX(d));
+    const ys=allEntriesAll.map(([,d])=>fnY(d));
     return pearson(xs,ys);
   }
   const corrSleepMood=corrPair(d=>sleepHoursForStats(d),d=>moodNum(d.mood));
@@ -2013,7 +2016,7 @@ const healthChartId='health-chart';
   const corrSportEnergy=corrPair(d=>sportMinutesForStats(d),d=>d.energy||null);
   const corrStressTMood=corrPair(d=>d.stressTravail||null,d=>moodNum(d.mood));
   const corrStressSMood=corrPair(d=>d.stressSocial||null,d=>moodNum(d.mood));
-  const corrMedMood=corrPair(d=>d.medStatus==='pris'?1:d.medStatus?0:null,d=>moodNum(d.mood));
+  const corrMedMood=corrPair(d=>d.medStatus==='pris'?1:(d.medStatus==='oublie'||d.medStatus==='oublié'||d.medStatus==='decale'||d.medStatus==='décalé')?0:null,d=>moodNum(d.mood));
   const corrEcritureEnergy=corrPair(d=>(d.ecriture?.roman?.mots||0)+(d.ecriture?.poesie?.mots||0)||null,d=>d.energy||null);
   const corrSocialMood=corrPair(d=>(d.socialMeetings?.length||0)||null,d=>moodNum(d.mood));
   const corrCocaQuality=corrPair(d=>d.cocaMl>0?1:d.coca===false?0:null,d=>d.quality||null);
@@ -2040,7 +2043,7 @@ const healthChartId='health-chart';
     corrRow('Coca → qualité journée',corrCocaQuality),
     corrRow('Travail CAPES → stress travail',corrCapesStress),
   ].filter(Boolean).join('');
-  const corrNote=allEntries.length<10?'<div style="font-size:11px;color:var(--text3);margin-top:6px">Les corrélations se renforcent avec le temps — moins de 10 entrées pour l\'instant.</div>':'<div style="font-size:11px;color:var(--text3);margin-top:6px">Calculé sur l\'ensemble des entrées ('+allEntries.length+' jours). Coefficient de Pearson.</div>';
+  const corrNote=allEntriesAll.length<10?'<div style="font-size:11px;color:var(--text3);margin-top:6px">Les corrélations se renforcent avec le temps — moins de 10 entrées pour l\'instant.</div>':'<div style="font-size:11px;color:var(--text3);margin-top:6px">Calculé sur l\'ensemble des entrées ('+allEntriesAll.length+' jours). Coefficient de Pearson.</div>';
 
   /* ── CAPES encart temps par thème depuis travailTodos ── */
   const capesThemeTime={};
@@ -2188,7 +2191,7 @@ const healthChartId='health-chart';
       </div>
     </div>`).join('') : '<div style="font-size:13px;color:var(--text3)">Aucun article CAPES renseigné.</div>'}
 
-  <div class="stitle">Corrélations réelles <span class="stitle-badge">Pearson sur ${allEntries.length} jours</span></div>
+  <div class="stitle">Corrélations réelles <span class="stitle-badge">Pearson sur ${allEntriesAll.length} jours</span></div>
   ${corrHtml||'<div style="font-size:13px;color:var(--text3)">Pas assez de données pour calculer.</div>'}
   ${corrNote}
 
