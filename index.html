@@ -1601,6 +1601,86 @@ function renderHealthChart(){
   if(healthChart)healthChart.destroy();
   healthChart=new Chart(canvas,{type:'line',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y===null?'—':ctx.parsed.y}`}}},scales:{x:{ticks:{font:{size:10},maxRotation:45}},yScore:{type:'linear',position:'left',min:0,max:10,title:{display:true,text:'humeur / stress / énergie'}},yHours:{type:'linear',position:'right',min:0,max:24,grid:{drawOnChartArea:false},title:{display:true,text:'heures'}},ySport:{type:'linear',position:'right',grid:{drawOnChartArea:false},display:false}}}});
 }
+/* ════════════════════════════════════════════════
+   TITRE & BADGES HEBDOMADAIRES
+   ════════════════════════════════════════════════ */
+function computeWeeklyTitle(days){
+  if(!days.length)return '<div class="add-item"><div style="font-size:13px;color:var(--text3)">Aucune donnée cette semaine.</div></div>';
+  const sportDays=days.filter(d=>d.sport&&d.sport.length).length;
+  const writeDays=days.filter(d=>d.ecriture?.roman?.mots||d.ecriture?.poesie?.mots).length;
+  const moodVals=days.filter(d=>d.mood).map(d=>({vl:1,l:2,n:3,g:4,vg:5,h:6}[d.mood]||3));
+  const avgMood=moodVals.length?moodVals.reduce((a,v)=>a+v,0)/moodVals.length:3;
+  const energyVals=days.filter(d=>d.energy).map(d=>d.energy);
+  const avgEnergy=energyVals.length?energyVals.reduce((a,v)=>a+v,0)/energyVals.length:5;
+  const cajesDays=days.filter(d=>d.capesFichesList?.length||d.capesNote).length;
+  const capesFiches=days.reduce((a,d)=>a+(d.capesFichesList?.length||0),0);
+  const totalMots=days.reduce((a,d)=>a+(d.ecriture?.roman?.mots||0)+(d.ecriture?.poesie?.mots||0),0);
+  const nococa=days.filter(d=>!d.cocaMl&&d.coca!==true).length;
+  const score=sportDays*2+writeDays*2+cajesDays*1.5+(avgMood>4?3:avgMood>3?1:0)+(avgEnergy>7?2:avgEnergy>5?1:0)+(nococa===days.length&&days.length>3?2:0);
+
+  let icon,title,subtitle,color;
+  if(score>=18){icon='👑';title='Souverain de l\'existence';subtitle='Semaine de légende. Écriture, sport, CAPES, zen. Tout.';color='#ba7517';}
+  else if(score>=14){icon='🦅';title='Aigle en plein vol';subtitle='Belle semaine. Tu fais des trucs, et ils tiennent la route.';color='#185fa5';}
+  else if(score>=10){icon='⚔️';title='Chevalier en campagne';subtitle='Semaine solide. Quelques batailles gagnées, quelques à venir.';color='#639922';}
+  else if(score>=7){icon='🗺️';title='Voyageur ordinaire';subtitle='Semaine correcte. Ni gloire ni désastre. La route continue.';color='#888780';}
+  else if(score>=4){icon='🌧️';title='Survivant sous la pluie';subtitle='Semaine difficile. Tu as tenu. C\'est déjà quelque chose.';color='#854f0b';}
+  else{icon='🛋️';title='Monarque du canapé';subtitle='Semaine de repos stratégique. Le canapé te rend à toi-même.';color='#e24b4a';}
+
+  const sportEmoji=sportDays>=5?'🏆':sportDays>=3?'💪':sportDays>=1?'👟':'🧘';
+  const writeEmoji=totalMots>=2000?'📖':totalMots>=500?'✍️':writeDays>0?'🖊️':'💤';
+  const capesEmoji=capesFiches>=5?'🎓':cajesDays>=3?'📚':cajesDays>0?'📝':'🎭';
+  const colaEmoji=nococa===days.length&&days.length>0?'💧':'🥤';
+
+  return `<div class="add-item" style="border-left:3px solid ${color};padding-left:14px;margin-bottom:10px">
+    <div style="font-size:28px;margin-bottom:4px">${icon}</div>
+    <div style="font-family:'DM Serif Display',serif;font-size:18px;color:${color};margin-bottom:3px">${title}</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:10px">${subtitle}</div>
+    <div style="display:flex;gap:16px;font-size:13px">
+      <span>${sportEmoji} ${sportDays}j sport</span>
+      <span>${writeEmoji} ${totalMots.toLocaleString('fr-FR')} mots</span>
+      <span>${capesEmoji} ${capesFiches} fiches</span>
+      <span>${colaEmoji} ${nococa}j sans coca</span>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:6px">Score semaine : ${Math.round(score)}/20</div>
+  </div>`;
+}
+
+function renderWeeklyBadges(days){
+  if(!days.length)return '';
+  const sportDays=days.filter(d=>d.sport&&d.sport.length).length;
+  const writeDays=days.filter(d=>d.ecriture?.roman?.mots||d.ecriture?.poesie?.mots).length;
+  const nococa=days.filter(d=>!d.cocaMl&&d.coca!==true).length;
+  const totalMots=days.reduce((a,d)=>a+(d.ecriture?.roman?.mots||0)+(d.ecriture?.poesie?.mots||0),0);
+  const capesFiches=days.reduce((a,d)=>a+(d.capesFichesList?.length||0),0);
+  const moodGood=days.filter(d=>d.mood==='g'||d.mood==='vg').length;
+  const totalSportMin=days.reduce((a,d)=>{if(!d.sportData)return a;return a+Object.values(d.sportData).reduce((b,sd)=>b+parseSportNumber(sd['durée (min)']),0);},0);
+
+  const weekBadges=[
+    {icon:'🏃',name:'Sprint hebdo',crit:'3+ jours de sport',ok:sportDays>=3},
+    {icon:'🔥',name:'Athlète de la semaine',crit:'5+ jours de sport',ok:sportDays>=5},
+    {icon:'✍️',name:'Plume active',crit:'3+ jours d\'écriture',ok:writeDays>=3},
+    {icon:'📖',name:'Romancier en feu',crit:'1000+ mots cette semaine',ok:totalMots>=1000},
+    {icon:'💧',name:'Sobre champion',crit:'Semaine sans coca',ok:nococa===days.length&&days.length>0},
+    {icon:'🎓',name:'Ficheur du peuple',crit:'3+ fiches CAPES',ok:capesFiches>=3},
+    {icon:'⚡',name:'Semaine chargée',crit:'Sport + écriture + CAPES',ok:sportDays>=1&&writeDays>=1&&capesFiches>=1},
+    {icon:'😌',name:'Semaine sereine',crit:'4+ jours de bonne humeur',ok:moodGood>=4},
+    {icon:'⏱️',name:'Endurant',crit:'3h+ de sport total',ok:totalSportMin>=180},
+  ];
+
+  const unlocked=weekBadges.filter(b=>b.ok);
+  if(!unlocked.length)return `<div style="font-size:12px;color:var(--text3);margin-bottom:12px">Aucun badge cette semaine — la semaine prochaine est une ardoise vierge.</div>`;
+
+  return `<div style="margin-bottom:12px">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px">${unlocked.length} badge${unlocked.length>1?'s':''} débloqué${unlocked.length>1?'s':''} cette semaine :</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      ${unlocked.map(b=>`<div style="display:flex;align-items:center;gap:6px;background:#eaf3de;border:0.5px solid #97c459;border-radius:var(--r);padding:6px 10px">
+        <span style="font-size:16px">${b.icon}</span>
+        <div><div style="font-size:12px;font-weight:500;color:#27500a">${b.name}</div><div style="font-size:10px;color:#639922">${b.crit}</div></div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
 function showStat(p,btn){curStat=p;document.querySelectorAll('.st').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderStats(p);}
 
 function filterEntries(period){
@@ -1758,8 +1838,334 @@ const chartArticlesRepId='chart-articles-rep-'+Date.now();
 const chartArticlesStatusId='chart-articles-status-'+Date.now();
 const healthChartId='health-chart';
 
-  /* ── corrélations Pearson réelles ── */
-  const allEntriesAll=Object.entries(DATA).filter(([k])=>k.match(/^\d{4}-\d{2}-\d{2}$/)).sort(([a],[b])=>a.localeCompare(b));
+  /* ══════════════════════════════════════
+     NOUVELLES STATS AVANCÉES
+     ══════════════════════════════════════ */
+
+  /* ── Corrélations décalées J+1 et J+2 ── */
+  function corrLag(fnX,fnY,lag){
+    const sorted=allEntriesAll;
+    const pairs=[];
+    for(let i=0;i<sorted.length-lag;i++){
+      const x=fnX(sorted[i][1]);
+      const y=fnY(sorted[i+lag][1]);
+      if(x!==null&&y!==null&&x!==undefined&&y!==undefined)pairs.push([x,y]);
+    }
+    if(pairs.length<4)return null;
+    const n=pairs.length,mx=pairs.reduce((a,[x])=>a+x,0)/n,my=pairs.reduce((a,[,y])=>a+y,0)/n;
+    let num=0,dx2=0,dy2=0;pairs.forEach(([x,y])=>{const a=x-mx,b=y-my;num+=a*b;dx2+=a*a;dy2+=b*b;});
+    const denom=Math.sqrt(dx2*dy2);return denom<1e-10?null:Math.round(num/denom*100)/100;
+  }
+  const lagSportMood1=corrLag(d=>sportMinutesForStats(d),d=>moodNum(d.mood),1);
+  const lagSleepEnergy1=corrLag(d=>sleepHoursForStats(d),d=>d.energy||null,1);
+  const lagSleepMood1=corrLag(d=>sleepHoursForStats(d),d=>moodNum(d.mood),1);
+  const lagSportMood2=corrLag(d=>sportMinutesForStats(d),d=>moodNum(d.mood),2);
+  const lagStressMood1=corrLag(d=>d.stressTravail||null,d=>moodNum(d.mood),1);
+
+  function lagCorrRow(lbl,val){
+    if(val===null)return '';
+    const pos=val>=0;
+    return `<div class="corr-row" style="font-style:italic"><span style="flex:1">${lbl}</span><div class="cbar-w"><div class="cbar" style="width:${Math.round(Math.abs(val)*100)}%;background:${pos?'#1d9e75':'#e24b4a'}"></div></div><span style="min-width:44px;text-align:right;color:${pos?'#1d9e75':'#e24b4a'};font-weight:500">${pos?'+':''}${val.toFixed(2)}</span></div>`;
+  }
+
+  /* ── Fenêtre glissante humeur 7 jours ── */
+  const rollingId='chart-rolling-'+Date.now();
+  const rollingLabels=[];const rollingData=[];
+  if(allEntriesAll.length>=7){
+    for(let i=6;i<allEntriesAll.length;i++){
+      const window7=allEntriesAll.slice(i-6,i+1).map(([,d])=>d);
+      const moodVals=window7.map(d=>moodNum(d.mood)).filter(v=>v!==null);
+      if(moodVals.length>=3){
+        rollingLabels.push(allEntriesAll[i][0].slice(5));
+        rollingData.push(Math.round(moodVals.reduce((a,v)=>a+v,0)/moodVals.length*10)/10);
+      }
+    }
+  }
+
+  /* ── Effet jour de la semaine ── */
+  const dowMood=[null,null,null,null,null,null,null].map(()=>({sum:0,n:0}));// 0=lu…6=di
+  const dowEnergy=[null,null,null,null,null,null,null].map(()=>({sum:0,n:0}));
+  const dowWrite=[0,0,0,0,0,0,0];
+  allEntriesAll.forEach(([k,d])=>{
+    const dow=(parseDateKey(k).getDay()+6)%7;
+    const m=moodNum(d.mood);if(m){dowMood[dow].sum+=m;dowMood[dow].n++;}
+    if(d.energy){dowEnergy[dow].sum+=d.energy;dowEnergy[dow].n++;}
+    if(d.ecriture?.roman?.mots||d.ecriture?.poesie?.mots)dowWrite[dow]++;
+  });
+  const dowLabels=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  const dowMoodAvg=dowMood.map(({sum,n})=>n>=2?Math.round(sum/n*10)/10:null);
+  const dowEnergyAvg=dowEnergy.map(({sum,n})=>n>=2?Math.round(sum/n*10)/10:null);
+  const dowRadarId='chart-dow-'+Date.now();
+
+  /* ── Portrait-robot meilleures journées ── */
+  const topDays=allEntriesAll.filter(([,d])=>d.quality>=4).map(([,d])=>d);
+  let bestSelfHtml='<div style="font-size:13px;color:var(--text3)">Pas encore assez de journées notées 4+ étoiles.</div>';
+  if(topDays.length>=3){
+    const topMoodCount={};topDays.forEach(d=>{if(d.mood)topMoodCount[d.mood]=(topMoodCount[d.mood]||0)+1;});
+    const topMood=Object.entries(topMoodCount).sort((a,b)=>b[1]-a[1])[0];
+    const topSleep=topDays.filter(d=>sleepHoursForStats(d)).map(d=>sleepHoursForStats(d));
+    const avgTopSleep=topSleep.length?Math.round(topSleep.reduce((a,v)=>a+v,0)/topSleep.length*10)/10:null;
+    const topEnergy=topDays.filter(d=>d.energy).map(d=>d.energy);
+    const avgTopEnergy=topEnergy.length?Math.round(topEnergy.reduce((a,v)=>a+v,0)/topEnergy.length*10)/10:null;
+    const sportInTop=topDays.filter(d=>d.sport&&d.sport.length).length;
+    const writeInTop=topDays.filter(d=>d.ecriture?.roman?.mots||d.ecriture?.poesie?.mots).length;
+    const nococa=topDays.filter(d=>!d.cocaMl&&d.coca!==true).length;
+    const medPris=topDays.filter(d=>d.medStatus==='pris').length;
+    bestSelfHtml=`<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Profil de tes ${topDays.length} meilleures journées (★★★★ et +) :</div>
+    <div class="stat-grid">
+      ${topMood?`<div class="sc hl"><div class="sc-label">Humeur dominante</div><div class="sc-val" style="font-size:15px">${MOOD_LABELS[topMood[0]]}</div><div class="sc-sub">${topMood[1]} fois sur ${topDays.length}</div></div>`:''}
+      ${avgTopSleep?`<div class="sc hl"><div class="sc-label">Sommeil moyen</div><div class="sc-val">${avgTopSleep}h</div></div>`:''}
+      ${avgTopEnergy?`<div class="sc hl"><div class="sc-label">Énergie moyenne</div><div class="sc-val">${avgTopEnergy}/10</div></div>`:''}
+      <div class="sc hl"><div class="sc-label">Sport pratiqué</div><div class="sc-val">${Math.round(sportInTop/topDays.length*100)}%</div><div class="sc-sub">des meilleures journées</div></div>
+      <div class="sc hl"><div class="sc-label">Écriture</div><div class="sc-val">${Math.round(writeInTop/topDays.length*100)}%</div><div class="sc-sub">des meilleures journées</div></div>
+      <div class="sc hl"><div class="sc-label">Sans coca</div><div class="sc-val">${Math.round(nococa/topDays.length*100)}%</div></div>
+      ${medPris?`<div class="sc hl"><div class="sc-label">Teralite pris</div><div class="sc-val">${Math.round(medPris/topDays.length*100)}%</div></div>`:''}
+    </div>`;
+  }
+
+  /* ── Indice de régularité écriture ── */
+  const writeKeys=allEntriesAll.filter(([,d])=>d.ecriture?.roman?.mots||d.ecriture?.poesie?.mots).map(([k])=>k);
+  let regularityHtml='';
+  if(writeKeys.length>=3){
+    const intervals=[];
+    for(let i=1;i<writeKeys.length;i++){
+      intervals.push(Math.round((parseDateKey(writeKeys[i])-parseDateKey(writeKeys[i-1]))/86400000));
+    }
+    const avgInt=Math.round(intervals.reduce((a,v)=>a+v,0)/intervals.length*10)/10;
+    const stdInt=Math.round(Math.sqrt(intervals.reduce((a,v)=>a+(v-avgInt)**2,0)/intervals.length)*10)/10;
+    const profile=stdInt<2?'Régulier · écriture quotidienne stable':stdInt<5?'Semi-régulier · sessions espacées':stdInt<10?'Par vagues · grandes variations':'Par rafales · longues pauses';
+    regularityHtml=`<div class="add-item">
+      <div style="font-size:13px;font-weight:500;margin-bottom:4px">Régularité d'écriture</div>
+      <div class="stat-grid">
+        <div class="sc"><div class="sc-label">Intervalle moyen</div><div class="sc-val">${avgInt}j</div><div class="sc-sub">entre sessions</div></div>
+        <div class="sc"><div class="sc-label">Écart-type</div><div class="sc-val">±${stdInt}j</div><div class="sc-sub">variabilité</div></div>
+      </div>
+      <div style="font-size:12px;color:var(--text2)">${profile}</div>
+    </div>`;
+  }
+
+  /* ── Comparaison année N-1 ── */
+  const prevYear=now.getFullYear()-1;
+  const curWeekNum=Math.ceil((now-new Date(now.getFullYear(),0,1))/86400000/7);
+  const prevYearEntries=Object.entries(DATA).filter(([k])=>{
+    if(!k.match(/^\d{4}-\d{2}-\d{2}$/))return false;
+    const d=parseDateKey(k);if(d.getFullYear()!==prevYear)return false;
+    const wn=Math.ceil((d-new Date(prevYear,0,1))/86400000/7);
+    return Math.abs(wn-curWeekNum)<=1;
+  }).map(([,d])=>d);
+  let yearAgoHtml='';
+  if(prevYearEntries.length>=2){
+    const pyMood=prevYearEntries.filter(d=>d.mood).map(d=>moodNum(d.mood)).filter(Boolean);
+    const pyEnergy=prevYearEntries.filter(d=>d.energy).map(d=>d.energy);
+    const pySport=prevYearEntries.filter(d=>d.sport&&d.sport.length).length;
+    const pyAvgMood=pyMood.length?Math.round(pyMood.reduce((a,v)=>a+v,0)/pyMood.length*10)/10:null;
+    const pyAvgE=pyEnergy.length?Math.round(pyEnergy.reduce((a,v)=>a+v,0)/pyEnergy.length*10)/10:null;
+    yearAgoHtml=`<div class="add-item" style="margin-bottom:8px">
+      <div style="font-size:13px;font-weight:500;margin-bottom:8px">Il y a un an — même semaine de ${prevYear}</div>
+      <div class="stat-grid">
+        ${pyAvgMood?`<div class="sc"><div class="sc-label">Humeur moy.</div><div class="sc-val" style="font-size:16px">${pyAvgMood}/6</div></div>`:''}
+        ${pyAvgE?`<div class="sc"><div class="sc-label">Énergie moy.</div><div class="sc-val" style="font-size:16px">${pyAvgE}/10</div></div>`:''}
+        <div class="sc"><div class="sc-label">Jours sport</div><div class="sc-val" style="font-size:16px">${pySport}</div></div>
+      </div>
+    </div>`;
+  }
+
+  /* ── Dernier record par métrique ── */
+  function daysSinceRecord(fn,label){
+    let maxVal=-Infinity,maxKey='';
+    allEntriesAll.forEach(([k,d])=>{const v=fn(d);if(v!==null&&v>maxVal){maxVal=v;maxKey=k;}});
+    if(!maxKey)return '';
+    const diff=Math.round((now-parseDateKey(maxKey))/86400000);
+    if(diff===0)return `<div class="cal-row"><span style="flex:1;color:var(--text2)">${label}</span><span style="font-weight:500;color:#1d9e75">Record aujourd'hui !</span><span style="font-size:11px;color:var(--text3)">${Math.round(maxVal*10)/10}</span></div>`;
+    return `<div class="cal-row"><span style="flex:1;color:var(--text2)">${label}</span><span style="font-size:12px">record il y a ${diff}j</span><span style="font-size:11px;color:var(--text3)">${Math.round(maxVal*10)/10}</span></div>`;
+  }
+  const recordsHtml=[
+    daysSinceRecord(d=>d.ecriture?.roman?.mots||null,'Mots roman en 1 jour'),
+    daysSinceRecord(d=>sportMinutesForStats(d)||null,'Minutes de sport en 1 jour'),
+    daysSinceRecord(d=>sleepHoursForStats(d)||null,'Heures de sommeil'),
+    daysSinceRecord(d=>d.energy||null,'Énergie'),
+    daysSinceRecord(d=>moodNum(d.mood)||null,'Humeur'),
+  ].filter(Boolean).join('');
+
+  /* ── Frise chronologique événements ── */
+  const timelineEntries=allEntriesAll.filter(([,d])=>d.event&&d.event.trim()).slice(-20);
+  const timelineHtml=timelineEntries.length?timelineEntries.map(([k,d])=>`
+    <div class="cal-row">
+      <span style="min-width:70px;font-size:11px;color:var(--text3)">${parseDateKey(k).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>
+      <span style="flex:1">${d.event}</span>
+    </div>`).join(''):`<div style="font-size:13px;color:var(--text3)">Aucun événement noté.</div>`;
+
+  /* ── Titre hebdomadaire ── */
+  const weekAllDays=filterEntries('week').entries.map(([,d])=>d);
+  const weekTitle=computeWeeklyTitle(weekAllDays);
+
+  /* ── Badges hebdomadaires (reset chaque semaine) ── */
+  const weeklyBadgesHtml=renderWeeklyBadges(weekAllDays);
+
+  document.getElementById('stat-content').innerHTML=`
+  <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Période : ${label} · ${allDays.length} jour${allDays.length!==1?'s':''} renseigné${allDays.length!==1?'s':''}</div>
+
+  <div class="stitle">Titre de la semaine <span class="stitle-badge">reset lundi</span></div>
+  ${weekTitle}
+  ${weeklyBadgesHtml}
+
+  <div class="stitle">Suivi santé <span class="stitle-badge">modulable</span></div>
+  <div class="add-item" style="margin-bottom:12px">
+    <div class="fl"><div class="lbl">Durée affichée</div>
+      <select onchange="setHealthRange(this.value)">
+        <option value="7" ${healthRangeDays==='7'?'selected':''}>7 derniers jours</option>
+        <option value="14" ${healthRangeDays==='14'?'selected':''}>14 derniers jours</option>
+        <option value="30" ${healthRangeDays==='30'?'selected':''}>30 derniers jours</option>
+        <option value="60" ${healthRangeDays==='60'?'selected':''}>60 derniers jours</option>
+        <option value="90" ${healthRangeDays==='90'?'selected':''}>90 derniers jours</option>
+        <option value="all" ${healthRangeDays==='all'?'selected':''}>Tout</option>
+      </select>
+    </div>
+    <div class="chips">
+      ${[['sleep','Sommeil'],['mood','Humeur'],['med','Teralite'],['stressT','Stress travail'],['stressS','Stress social'],['energy','Énergie'],['sport','Sport']].map(([key,lbl2])=>`<label class="chip${healthVisible[key]?' sel':''}" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" ${healthVisible[key]?'checked':''} onchange="toggleHealthSeries('${key}',this)" style="width:auto">${lbl2}</label>`).join('')}
+    </div>
+    <div style="font-size:11px;color:var(--text3)">Axes : humeur/stress/énergie à gauche, heures à droite.</div>
+  </div>
+  <div class="chart-wrap" style="height:300px;margin-bottom:14px"><canvas id="health-chart" role="img" aria-label="Suivi santé modulable">Suivi santé.</canvas></div>
+
+  ${rollingData.length>=5?`<div class="stitle">Tendance humeur — fenêtre glissante 7 jours</div>
+  <div class="chart-wrap" style="height:180px;margin-bottom:14px"><canvas id="${rollingId}" role="img" aria-label="Humeur moyenne 7 jours">Tendance humeur.</canvas></div>`:''}
+
+  <div class="stitle">Humeur & énergie par jour de la semaine</div>
+  <div class="chart-wrap" style="height:200px;margin-bottom:14px"><canvas id="${dowRadarId}" role="img" aria-label="Profil hebdomadaire">Profil hebdomadaire.</canvas></div>
+
+  <div class="stat-grid">
+    <div class="sc"><div class="sc-label">Énergie moyenne</div><div class="sc-val">${avgE||'—'}</div><div class="sc-sub">sur 10</div></div>
+    <div class="sc"><div class="sc-label">Jours sport</div><div class="sc-val">${sportD.length}</div></div>
+    <div class="sc"><div class="sc-label">Mots écrits</div><div class="sc-val">${(totalRomanMots+totalPoesieMots).toLocaleString('fr-FR')}</div><div class="sc-sub">roman + poésie</div></div>
+    <div class="sc"><div class="sc-label">Fiches CAPES</div><div class="sc-val">${totalFiches}</div></div>
+  </div>
+  <div class="stat-grid">
+    <div class="sc"><div class="sc-label">Stress travail moy.</div><div class="sc-val">${avgStressT||'—'}</div><div class="sc-sub">sur 5</div></div>
+    <div class="sc"><div class="sc-label">Stress social moy.</div><div class="sc-val">${avgStressS||'—'}</div><div class="sc-sub">sur 5</div></div>
+    <div class="sc"><div class="sc-label">Jours stress élevé</div><div class="sc-val">${highStressDays}</div><div class="sc-sub">score ≥ 4</div></div>
+    <div class="sc"><div class="sc-label">Rencontres</div><div class="sc-val">${totalSoc}</div></div>
+  </div>
+
+  ${warns.map(w=>`<div class="warn-box">${w}</div>`).join('')}
+
+  <div class="stitle">Heatmap annuelle <span class="stitle-badge">${now.getFullYear()}</span></div>
+  ${renderHeatmap(now.getFullYear())}
+
+  <div class="stitle">Portrait-robot de ton meilleur toi</div>
+  ${bestSelfHtml}
+
+  ${yearAgoHtml?`<div class="stitle">Comparaison — il y a un an</div>${yearAgoHtml}`:''}
+
+  <div class="stitle">Derniers records <span class="stitle-badge">distance au sommet</span></div>
+  ${recordsHtml||'<div style="font-size:13px;color:var(--text3)">Pas encore de données suffisantes.</div>'}
+
+  <div class="stitle">Séries (streaks) <span class="stitle-badge">gamification</span></div>
+  <div class="streak-row"><span class="streak-fire">🔥</span><span class="streak-val">${sportStreak.cur}</span><span class="streak-lbl">jours de sport consécutifs</span><span class="streak-max">record : ${sportStreak.max}j${sportStreak.maxEndDate?' ('+sportStreak.maxEndDate+')':''}</span></div>
+  <div class="streak-row"><span class="streak-fire">✍️</span><span class="streak-val">${ecritureStreak.cur}</span><span class="streak-lbl">jours d'écriture consécutifs</span><span class="streak-max">record : ${ecritureStreak.max}j</span></div>
+  <div class="streak-row"><span class="streak-fire">💧</span><span class="streak-val">${sportStreak7.cur}</span><span class="streak-lbl">jours sans coca</span><span class="streak-max">record : ${sportStreak7.max}j</span></div>
+  <div class="streak-row"><span class="streak-fire">🎓</span><span class="streak-val">${calcStreak(d=>d.capesFichesList?.length>0||d.capesNote).cur}</span><span class="streak-lbl">jours de travail CAPES consécutifs</span><span class="streak-max">record : ${calcStreak(d=>d.capesFichesList?.length>0||d.capesNote).max}j</span></div>
+
+  <div class="stitle">Badges permanents</div>
+  ${renderBadges()}
+
+  <div class="stitle">Projets <span class="stitle-badge">${activeProj.length} actifs · ${closedProj.length} terminés</span></div>
+  <div class="stat-grid">
+    <div class="sc gold"><div class="sc-label">Projets actifs</div><div class="sc-val">${activeProj.length}</div></div>
+    <div class="sc"><div class="sc-label">Projets terminés</div><div class="sc-val">${closedProj.length}</div></div>
+    ${avgProjDays!==null?`<div class="sc"><div class="sc-label">Durée moy. projet</div><div class="sc-val">${avgProjDays}j</div></div>`:''}
+  </div>
+  ${closedProj.length?`<div style="font-size:12px;color:var(--text2)">Projet le plus long : <strong>${closedProj.sort((a,b)=>((new Date(b.endDate)-new Date(b.startDate))||0)-((new Date(a.endDate)-new Date(a.startDate))||0))[0].name}</strong></div>`:''}
+
+  <div class="stitle">Gestion du temps — travail</div>
+  ${travailBars||'<div style="font-size:13px;color:var(--text3)">Aucun temps de travail renseigné.</div>'}
+  <div class="stitle">Répartition du temps <span class="stitle-badge">graphique</span></div>
+  <div class="chart-wrap" style="height:200px"><canvas id="${timeId}" role="img" aria-label="Répartition du temps travail">Répartition du temps de travail.</canvas></div>
+
+  <div class="stitle">Écriture <span class="stitle-badge">roman + poésie</span></div>
+  <div class="stat-grid">
+    <div class="sc"><div class="sc-label">Mots roman</div><div class="sc-val">${totalRomanMots.toLocaleString('fr-FR')}</div><div class="sc-sub">≈ ${Math.round(totalRomanMots/80000*10)/10} roman de Zola</div></div>
+    <div class="sc"><div class="sc-label">Pages roman</div><div class="sc-val">${totalRomanPages}</div></div>
+    <div class="sc"><div class="sc-label">Poèmes</div><div class="sc-val">${totalPoemes}</div></div>
+    <div class="sc"><div class="sc-label">Mots poésie</div><div class="sc-val">${totalPoesieMots.toLocaleString('fr-FR')}</div></div>
+  </div>
+  ${regularityHtml}
+
+  <div class="stitle">Répartition des humeurs</div>
+  ${moodBars||'<div style="font-size:13px;color:var(--text3)">Aucune humeur renseignée.</div>'}
+
+  ${kmCourse>0?`<div class="stitle">Équivalences fun <span class="stitle-badge">pour sourire</span></div>
+  <div class="stat-grid">
+    <div class="sc hl"><div class="sc-label">Km courus</div><div class="sc-val">${Math.round(kmCourse)}</div><div class="sc-sub">= ${luxPct}% de la largeur du Luxembourg</div></div>
+    <div class="sc"><div class="sc-label">Heures de sport</div><div class="sc-val">${heuresSport}</div><div class="sc-sub">≈ ${Math.round(heuresSport/24*10)/10} journées entières</div></div>
+    <div class="sc"><div class="sc-label">Mots écrits total</div><div class="sc-val">${(totalRomanMots+totalPoesieMots).toLocaleString('fr-FR')}</div><div class="sc-sub">≈ ${Math.round((totalRomanMots+totalPoesieMots)/250)} pages imprimées</div></div>
+  </div>`:''}
+
+  <div class="stitle">Frise des événements</div>
+  ${timelineHtml}
+
+  <div class="stitle">CAPES — couverture thématique</div>
+  ${renderCapesRadar(allFiches,allCapesBooks,allCapesArticles,capesObj)}
+  <div style="margin-top:8px">
+    <div class="lbl" style="margin-bottom:4px">Objectif fiches</div>
+    <input type="number" min="1" max="500" value="${capesObj}" style="width:100px;font-size:13px;padding:5px 8px;border:0.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif" oninput="DATA['__capesObj']=+this.value||100;saveData()">
+  </div>
+  ${capesTempsHtml?`<div class="stitle">Temps par thème CAPES <span class="stitle-badge">estimé via fiches</span></div>${capesTempsHtml}`:''}
+
+  <div class="stitle">Bibliothèque des fiches CAPES (${allFiches.length})</div>
+  ${allFiches.length?allFiches.map(f=>`
+    <div class="book-item">
+      <div class="book-title">${f.title}</div>
+      <div class="book-meta">${f.date} · ${f.label||'sans label'}</div>
+      ${f.note?`<div style="font-size:11px;color:var(--text2);margin-top:3px">${f.note}</div>`:''}
+    </div>`).join(''):'<div style="font-size:13px;color:var(--text3)">Aucune fiche CAPES renseignée.</div>'}
+  <div class="stitle">Bibliothèque — loisir (${loisirBooks.length})</div>${loisirList}
+  <div class="stitle">Graphiques CAPES <span class="stitle-badge">fiches & livres</span></div>
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartFichesRepId}" role="img" aria-label="Répartition des fiches CAPES par label">Répartition des fiches CAPES par label.</canvas></div>
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartFichesProdId}" role="img" aria-label="Production des fiches CAPES par date">Production des fiches CAPES par date.</canvas></div>
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartBooksRepId}" role="img" aria-label="Répartition des livres CAPES par label">Répartition des livres CAPES par label.</canvas></div>
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartBooksStatusId}" role="img" aria-label="Statut des livres CAPES">Statut des livres CAPES.</canvas></div>
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartArticlesRepId}" role="img" aria-label="Répartition des articles CAPES par label">Répartition des articles CAPES par label.</canvas></div>
+  <div class="chart-wrap" style="height:220px;margin-bottom:12px"><canvas id="${chartArticlesStatusId}" role="img" aria-label="Statut des articles CAPES">Statut des articles CAPES.</canvas></div>
+  <div class="stitle">Bibliothèque — CAPES (${allCapesBooks.length})</div>${capesList}
+  <div class="stitle">Articles — CAPES (${allCapesArticles.length})</div>
+  ${allCapesArticles.length?allCapesArticles.map(a=>`<div class="book-item"><div class="book-title">${a.title}</div><div class="book-meta">${a.author||'—'}${a.source?' · '+a.source:''}</div><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:3px"><span class="book-badge badge-capes">article</span>${a.label?`<span class="book-badge ${CAPES_BADGE_CLASSES[a.label]||'badge-capes'}">${a.label}</span>`:''}<span style="font-size:11px;color:var(--text3)">${a.status}</span>${a.note?`<span style="font-size:11px;color:var(--text2)">— ${a.note}</span>`:''}</div></div>`).join(''):'<div style="font-size:13px;color:var(--text3)">Aucun article CAPES renseigné.</div>'}
+
+  <div class="stitle">Corrélations réelles J<span class="stitle-badge">Pearson · ${allEntriesAll.length} jours</span></div>
+  ${corrHtml||'<div style="font-size:13px;color:var(--text3)">Pas assez de données.</div>'}
+  <div class="stitle">Corrélations décalées <span class="stitle-badge">effets J+1 · J+2</span></div>
+  <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Ce qui d'hier prédit ton humeur ou ton énergie d'aujourd'hui.</div>
+  ${[lagCorrRow('Sport J → humeur J+1',lagSportMood1),lagCorrRow('Sport J → humeur J+2',lagSportMood2),lagCorrRow('Sommeil J → énergie J+1',lagSleepEnergy1),lagCorrRow('Sommeil J → humeur J+1',lagSleepMood1),lagCorrRow('Stress travail J → humeur J+1',lagStressMood1)].filter(Boolean).join('')||'<div style="font-size:13px;color:var(--text3)">Pas assez de données.</div>'}
+  ${corrNote}
+
+  <div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap">
+    <button onclick="exportJSON()" style="font-size:12px;padding:6px 13px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">Exporter JSON</button>
+    <button onclick="exportCSV()" style="font-size:12px;padding:6px 13px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">Exporter CSV</button>
+    <button onclick="importJSON()" style="font-size:12px;padding:6px 13px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">Importer JSON</button>
+    <button onclick="syncFromDropbox()" style="font-size:12px;padding:6px 13px;border:0.5px solid var(--border2);border-radius:var(--r);background:none;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">Charger Dropbox</button>
+  </div>`;
+
+  renderHealthChart();
+
+  /* ── Rolling 7j chart ── */
+  if(rollingData.length>=5){
+    const rc=document.getElementById(rollingId);
+    if(rc){
+      new Chart(rc,{type:'line',data:{labels:rollingLabels,datasets:[{data:rollingData,borderColor:'#185fa5',backgroundColor:'#e6f1fb55',fill:true,tension:0.4,pointRadius:2,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Humeur moy: ${ctx.parsed.y}/6`}}},scales:{x:{ticks:{font:{size:10},autoSkip:true,maxTicksLimit:12}},y:{min:1,max:6,ticks:{font:{size:10},stepSize:1,callback:v=>['','Très basse','Basse','Neutre','Bonne','Très bonne','Agitation'][v]||v}}}}});
+    }
+  }
+
+  /* ── Jour de la semaine radar ── */
+  const dc=document.getElementById(dowRadarId);
+  if(dc){
+    new Chart(dc,{type:'bar',data:{labels:dowLabels,datasets:[
+      {label:'Humeur moy (×2)',data:dowMoodAvg.map(v=>v?v*2:null),backgroundColor:'#e24b4a55',borderColor:'#e24b4a',borderWidth:1.5},
+      {label:'Énergie moy',data:dowEnergyAvg,backgroundColor:'#185fa555',borderColor:'#185fa5',borderWidth:1.5},
+      {label:'Jours écriture',data:dowWrite,backgroundColor:'#7f77dd55',borderColor:'#7f77dd',borderWidth:1.5}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:ctx=>{if(ctx.datasetIndex===0)return `Humeur: ${ctx.parsed.y?Math.round(ctx.parsed.y/2*10)/10:'-'}/6`;if(ctx.datasetIndex===1)return `Énergie: ${ctx.parsed.y||'-'}/10`;return `Écriture: ${ctx.parsed.y} jour(s)`;}}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:10}}}}}});
+  }
+
+  const tCanvas=document.getElementById(timeId);
   function corrPair(fnX,fnY){
     const xs=allEntriesAll.map(([,d])=>fnX(d));
     const ys=allEntriesAll.map(([,d])=>fnY(d));
