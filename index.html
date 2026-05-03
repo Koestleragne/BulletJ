@@ -327,7 +327,7 @@ textarea{resize:vertical;min-height:56px}
       <div style="display:flex;gap:6px;flex-wrap:wrap" id="qe-med-row">
         <button class="qmb" onclick="qeSetMed('pris',this)">pris</button>
         <button class="qmb" onclick="qeSetMed('oublie',this)">oublié</button>
-        <button class="qmb" onclick="qeSetMed('decale',this)">décalé</button>
+        <button class="qmb" onclick="qeSetMed('decale',this)">decale</button>
       </div>
     </div>
     <div class="quick-section">
@@ -939,7 +939,7 @@ function renderCal(){
     const ec=day.ecriture;if(ec&&((ec.roman&&(ec.roman.mots||ec.roman.pages))||(ec.poesie&&ec.poesie.mots)))dots+=`<div class="dot" style="background:#7f77dd"></div>`;
     if(day.fiches||day.capesNote||(day.capesFichesList&&day.capesFichesList.length))dots+=`<div class="dot" style="background:#d4537e"></div>`;
     if(day.medStatus==='oublié')dots+=`<div class="dot" style="background:#e24b4a;border:1px solid #a32d2d" title="Teralite oublié"></div>`;
-    else if(day.medStatus==='décalé')dots+=`<div class="dot" style="background:#ba7517" title="Teralite décalé"></div>`;
+    else if(day.medStatus==='decale')dots+=`<div class="dot" style="background:#ba7517" title="Teralite decale"></div>`;
     if(hasDl)dots+=`<div class="deadline-dot"></div>`;
     if(dayDeadlines.length){
     el.title=dayDeadlines.map(dl=>`${dl.label} — ${dl.category||'échéance'}`).join('\n');
@@ -1008,7 +1008,7 @@ function secMental(d,k){
     <div class="two">
       <div class="fl"><div class="lbl">Teralite — heure de prise</div><input type="time" id="med-time-${k}" value="${d.medTime||''}"></div>
       <div class="fl"><div class="lbl">Statut</div><div class="mood-btns" style="margin-top:4px">
-        ${['pris','oublié','décalé'].map(s=>`<button class="mb${d.medStatus===s?' sel-ok':''}" onclick="initDay('${k}').medStatus='${s}';this.closest('.mood-btns').querySelectorAll('.mb').forEach(b=>b.className='mb');this.className='mb sel-ok'">${s}</button>`).join('')}
+        ${['pris','oublié','decale'].map(s=>`<button class="mb${d.medStatus===s?' sel-ok':''}" onclick="initDay('${k}').medStatus='${s}';this.closest('.mood-btns').querySelectorAll('.mb').forEach(b=>b.className='mb');this.className='mb sel-ok'">${s}</button>`).join('')}
       </div></div>
     </div>
     <div class="fl"><div class="lbl">Note du jour</div><textarea id="mn-${k}" placeholder="Comment tu te sens...">${d.mentalNote||''}</textarea></div>
@@ -1842,7 +1842,7 @@ const healthChartId='health-chart';
      NOUVELLES STATS AVANCÉES
      ══════════════════════════════════════ */
 
-  /* ── Corrélations décalées J+1 et J+2 ── */
+  /* ── Corrélations decalees J+1 et J+2 ── */
   function corrLag(fnX,fnY,lag){
     const sorted=allEntriesAll;
     const pairs=[];
@@ -2133,7 +2133,7 @@ const healthChartId='health-chart';
 
   <div class="stitle">Corrélations réelles J<span class="stitle-badge">Pearson · ${allEntriesAll.length} jours</span></div>
   ${corrHtml||'<div style="font-size:13px;color:var(--text3)">Pas assez de données.</div>'}
-  <div class="stitle">Corrélations décalées <span class="stitle-badge">effets J+1 · J+2</span></div>
+  <div class="stitle">Corrélations decalees <span class="stitle-badge">effets J+1 · J+2</span></div>
   <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Ce qui d'hier prédit ton humeur ou ton énergie d'aujourd'hui.</div>
   ${[lagCorrRow('Sport J → humeur J+1',lagSportMood1),lagCorrRow('Sport J → humeur J+2',lagSportMood2),lagCorrRow('Sommeil J → énergie J+1',lagSleepEnergy1),lagCorrRow('Sommeil J → humeur J+1',lagSleepMood1),lagCorrRow('Stress travail J → humeur J+1',lagStressMood1)].filter(Boolean).join('')||'<div style="font-size:13px;color:var(--text3)">Pas assez de données.</div>'}
   ${corrNote}
@@ -2363,10 +2363,10 @@ const healthChartId='health-chart';
   </div>`;
 
   renderHealthChart();
-  const tCanvas=document.getElementById(timeId);
-  if(tCanvas&&totalTravailMin>0){
-    if(timeChart){timeChart.destroy();}
-    timeChart=new Chart(tCanvas,{
+  const tCanvas2 = document.getElementById(timeId);
+  if (tCanvas2 && totalTravailMin > 0) {
+    if (timeChart) timeChart.destroy();
+    timeChart = new Chart(tCanvas2, {
       type:'doughnut',
       data:{labels:TRAVAIL_TODOS.map(t=>t.label),datasets:[{data:TRAVAIL_TODOS.map(t=>travailMinByTask[t.key]||0),backgroundColor:['#D85A30','#185FA5','#1D9E75','#7F77DD'],borderWidth:0}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:10}},tooltip:{callbacks:{label:ctx=>{const min=ctx.parsed;const h=Math.floor(min/60);const m=min%60;return `${ctx.label}: ${h>0?h+'h':''}${m}min`;}}}}}
